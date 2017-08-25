@@ -65,12 +65,24 @@ pub trait Identity<N> {
     fn identity() -> N;
 }
 
+/// A trait that specifies that this type allows uncombining.
+pub trait Inverse<N> {
+    /// Returns some value such that `combine(uncombine(a, b), b) = a`.
+    fn uncombine(a: &mut N, b: &N);
+}
+
 /// Each node contains the sum of the interval it represents.
 pub struct Add;
 impl<T: ops::Add<Output=T> + Copy> Operation<T> for Add {
     #[inline(always)]
     fn combine(a: &T, b: &T) -> T {
         *a + *b
+    }
+}
+impl<T: ops::Sub<Output=T> + Copy> Inverse<T> for Add {
+    #[inline(always)]
+    fn uncombine(a: &mut T, b: &T) {
+        *a = *a - *b
     }
 }
 impl<T: ops::Add<Output=T> + Copy> CommutativeOperation<T> for Add {}
@@ -98,6 +110,12 @@ impl<T: ops::Mul<Output=T> + Copy> Operation<T> for Mul {
     #[inline(always)]
     fn combine(a: &T, b: &T) -> T {
         *a * *b
+    }
+}
+impl<T: ops::Div<Output=T> + Copy> Inverse<T> for Mul {
+    #[inline(always)]
+    fn uncombine(a: &mut T, b: &T) {
+        *a = *a / *b
     }
 }
 impl CommutativeOperation<u8> for Mul {}
@@ -326,6 +344,13 @@ impl<TA, TB, A: Operation<TA>, B: Operation<TB>> Operation<(TA, TB)> for Pair<A,
     #[inline]
     fn combine_both(a: (TA, TB), b: (TA, TB)) -> (TA, TB) {
         (A::combine_both(a.0, b.0), B::combine_both(a.1, b.1))
+    }
+}
+impl<TA, TB, A: Inverse<TA>, B: Inverse<TB>> Inverse<(TA, TB)> for Pair<A, B> {
+    #[inline(always)]
+    fn uncombine(a: &mut (TA, TB), b: &(TA, TB)) {
+        A::uncombine(&mut a.0, &b.0);
+        B::uncombine(&mut a.1, &b.1);
     }
 }
 impl<TA, TB, A: CommutativeOperation<TA>, B: CommutativeOperation<TB>> CommutativeOperation<(TA, TB)> for Pair<A, B> {}
