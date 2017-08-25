@@ -1,0 +1,9 @@
+[package]
+name = "segment-tree"
+version = "0.1.0"
+authors = ["Alice Ryhl <alice@ryhl.io>"]
+
+[dependencies]
+
+[dev-dependencies]
+rand = "0.3"
