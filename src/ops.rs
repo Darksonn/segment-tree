@@ -389,7 +389,7 @@ impl Identity<f64> for MinTakeNaN { fn identity() -> f64 { ::std::f64::INFINITY 
 
 #[cfg(test)]
 mod tests {
-    use std::f32;
+    use std::{f32, i32};
     use ops::*;
     #[test]
     fn ops_nan() {
@@ -424,6 +424,14 @@ mod tests {
         assert!(MinTakeNaN::combine_both(f32::NAN, f32::NEG_INFINITY).is_nan());
         assert!(MinTakeNaN::combine_both(f32::NEG_INFINITY, f32::NAN).is_nan());
         assert!(MinTakeNaN::combine_both(f32::NAN, f32::NAN).is_nan());
+    }
+    #[test]
+    fn ops_and() {
+        for i in -200i32 .. 201i32 {
+            assert_eq!(And::combine_both(i, And::identity()), i);
+        }
+        assert_eq!(And::combine_both(i32::MAX, And::identity()), i32::MAX);
+        assert_eq!(And::combine_both(i32::MIN, And::identity()), i32::MIN);
     }
 }
 
