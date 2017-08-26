@@ -24,7 +24,8 @@ use ops::{CommutativeOperation, Identity};
 ///use std::iter::repeat;
 ///
 /// // make a giant tree of zeroes
-///let mut tree: PointSegment<_, Add> = PointSegment::build(repeat(0).take(1_000_000).collect());
+///let mut tree: PointSegment<_, Add> = PointSegment::build(repeat(0).take(1_000_000)
+///                                                         .collect());
 ///
 /// // add one to every value between 200 and 1000
 ///tree.modify(200, 500_000, 1);

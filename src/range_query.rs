@@ -39,8 +39,8 @@ use maybe_owned::MaybeOwned;
 /// // if we want to avoid cloning, we can use noclone_query:
 ///use segment_tree::maybe_owned::MaybeOwned;
 ///assert_eq!(tree.noclone_query(4, 9), Some(MaybeOwned::Owned(2)));
-/// // note that the Eq implementation of MaybeOwned considers Owned and Borrowed equal if their
-/// // contents are equal
+/// // note that the Eq implementation of MaybeOwned considers Owned and Borrowed equal if
+/// // their contents are equal
 ///
 /// // since minimum is commutative, we can use quick_query
 ///assert_eq!(tree.quick_query(3, 11), 1);
