@@ -130,6 +130,7 @@ impl CommutativeOperation<usize> for Mul {}
 impl CommutativeOperation<isize> for Mul {}
 impl CommutativeOperation<f32> for Mul {}
 impl CommutativeOperation<f64> for Mul {}
+impl<T: Copy> CommutativeOperation<Wrapping<T>> for Mul where Mul: CommutativeOperation<T>, Wrapping<T>: ops::Mul<Output=Wrapping<T>> {}
 impl Identity<u8> for Mul { fn identity() -> u8 { 1 } }
 impl Identity<u16> for Mul { fn identity() -> u16 { 1 } }
 impl Identity<u32> for Mul { fn identity() -> u32 { 1 } }
@@ -143,6 +144,118 @@ impl Identity<f64> for Mul { fn identity() -> f64 { 1.0 } }
 impl Identity<usize> for Mul { fn identity() -> usize { 1 } }
 impl Identity<isize> for Mul { fn identity() -> isize { 1 } }
 impl<T> Identity<Wrapping<T>> for Mul where Mul: Identity<T> {
+    fn identity() -> Wrapping<T> {
+        Wrapping(Self::identity())
+    }
+}
+
+
+/// Each node contains the bitwise xor of the interval it represents.
+pub struct Xor;
+impl<T: ops::BitXor<Output=T> + Copy> Operation<T> for Xor {
+    #[inline(always)]
+    fn combine(a: &T, b: &T) -> T {
+        *a ^ *b
+    }
+}
+impl<T: ops::BitXor<Output=T> + Copy> Inverse<T> for Xor {
+    #[inline(always)]
+    fn uncombine(a: &mut T, b: &T) {
+        *a = *a ^ *b
+    }
+}
+impl CommutativeOperation<u8> for Xor {}
+impl CommutativeOperation<u16> for Xor {}
+impl CommutativeOperation<u32> for Xor {}
+impl CommutativeOperation<u64> for Xor {}
+impl CommutativeOperation<i8> for Xor {}
+impl CommutativeOperation<i16> for Xor {}
+impl CommutativeOperation<i32> for Xor {}
+impl CommutativeOperation<i64> for Xor {}
+impl CommutativeOperation<usize> for Xor {}
+impl CommutativeOperation<isize> for Xor {}
+impl<T: Copy> CommutativeOperation<Wrapping<T>> for Xor where Xor: CommutativeOperation<T>, Wrapping<T>: ops::BitXor<Output=Wrapping<T>> {}
+impl Identity<u8> for Xor { fn identity() -> u8 { 0 } }
+impl Identity<u16> for Xor { fn identity() -> u16 { 0 } }
+impl Identity<u32> for Xor { fn identity() -> u32 { 0 } }
+impl Identity<u64> for Xor { fn identity() -> u64 { 0 } }
+impl Identity<i8> for Xor { fn identity() -> i8 { 0 } }
+impl Identity<i16> for Xor { fn identity() -> i16 { 0 } }
+impl Identity<i32> for Xor { fn identity() -> i32 { 0 } }
+impl Identity<i64> for Xor { fn identity() -> i64 { 0 } }
+impl Identity<usize> for Xor { fn identity() -> usize { 0 } }
+impl Identity<isize> for Xor { fn identity() -> isize { 0 } }
+impl<T> Identity<Wrapping<T>> for Xor where Xor: Identity<T> {
+    fn identity() -> Wrapping<T> {
+        Wrapping(Self::identity())
+    }
+}
+
+/// Each node contains the bitwise and of the interval it represents.
+pub struct And;
+impl<T: ops::BitAnd<Output=T> + Copy> Operation<T> for And {
+    #[inline(always)]
+    fn combine(a: &T, b: &T) -> T {
+        *a & *b
+    }
+}
+impl CommutativeOperation<u8> for And {}
+impl CommutativeOperation<u16> for And {}
+impl CommutativeOperation<u32> for And {}
+impl CommutativeOperation<u64> for And {}
+impl CommutativeOperation<i8> for And {}
+impl CommutativeOperation<i16> for And {}
+impl CommutativeOperation<i32> for And {}
+impl CommutativeOperation<i64> for And {}
+impl CommutativeOperation<usize> for And {}
+impl CommutativeOperation<isize> for And {}
+impl<T: Copy> CommutativeOperation<Wrapping<T>> for And where And: CommutativeOperation<T>, Wrapping<T>: ops::BitAnd<Output=Wrapping<T>> {}
+impl Identity<u8> for And { fn identity() -> u8 { !0 } }
+impl Identity<u16> for And { fn identity() -> u16 { !0 } }
+impl Identity<u32> for And { fn identity() -> u32 { !0 } }
+impl Identity<u64> for And { fn identity() -> u64 { !0 } }
+impl Identity<i8> for And { fn identity() -> i8 { !0 } }
+impl Identity<i16> for And { fn identity() -> i16 { !0 } }
+impl Identity<i32> for And { fn identity() -> i32 { !0 } }
+impl Identity<i64> for And { fn identity() -> i64 { !0 } }
+impl Identity<usize> for And { fn identity() -> usize { !0 } }
+impl Identity<isize> for And { fn identity() -> isize { !0 } }
+impl<T> Identity<Wrapping<T>> for And where And: Identity<T> {
+    fn identity() -> Wrapping<T> {
+        Wrapping(Self::identity())
+    }
+}
+
+/// Each node contains the bitwise or of the interval it represents.
+pub struct Or;
+impl<T: ops::BitOr<Output=T> + Copy> Operation<T> for Or {
+    #[inline(always)]
+    fn combine(a: &T, b: &T) -> T {
+        *a | *b
+    }
+}
+impl CommutativeOperation<u8> for Or {}
+impl CommutativeOperation<u16> for Or {}
+impl CommutativeOperation<u32> for Or {}
+impl CommutativeOperation<u64> for Or {}
+impl CommutativeOperation<i8> for Or {}
+impl CommutativeOperation<i16> for Or {}
+impl CommutativeOperation<i32> for Or {}
+impl CommutativeOperation<i64> for Or {}
+impl CommutativeOperation<usize> for Or {}
+impl CommutativeOperation<isize> for Or {}
+impl<T: Copy> CommutativeOperation<Wrapping<T>> for Or where Or: CommutativeOperation<T>, Wrapping<T>: ops::BitOr<Output=Wrapping<T>> {}
+impl Identity<u8> for Or { fn identity() -> u8 { 0 } }
+impl Identity<u16> for Or { fn identity() -> u16 { 0 } }
+impl Identity<u32> for Or { fn identity() -> u32 { 0 } }
+impl Identity<u64> for Or { fn identity() -> u64 { 0 } }
+impl Identity<i8> for Or { fn identity() -> i8 { 0 } }
+impl Identity<i16> for Or { fn identity() -> i16 { 0 } }
+impl Identity<i32> for Or { fn identity() -> i32 { 0 } }
+impl Identity<i64> for Or { fn identity() -> i64 { 0 } }
+impl Identity<usize> for Or { fn identity() -> usize { 0 } }
+impl Identity<isize> for Or { fn identity() -> isize { 0 } }
+impl<T> Identity<Wrapping<T>> for Or where Or: Identity<T> {
     fn identity() -> Wrapping<T> {
         Wrapping(Self::identity())
     }
