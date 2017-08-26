@@ -3,7 +3,7 @@
 //!
 //! The data structures in this crate are all trees. The trees are represented using an array for
 //! high performance and low memory usage.
-//! Dispite the name of the crate, not every tree in this crate is a segment tree.
+//! Despite the name of the crate, not every tree in this crate is a segment tree.
 //!
 //! The [`SegmentPoint`] data structure allows solving the [range minimum query][1] problem, as
 //! well as performing any operator (such as addition or matrix multiplication) over any interval.
