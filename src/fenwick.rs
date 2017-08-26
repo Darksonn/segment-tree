@@ -165,7 +165,7 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
     }
     /// Replace every value in the type with `f(value)`.
     /// This function assumes that `f(a) * f(b) = f(a * b)`.
-    /// Applies then function `len` times.
+    /// Applies the function `len` times.
     #[inline]
     pub fn map<F: FnMut(&mut N)>(&mut self, mut f: F) {
         for val in &mut self.buf {
