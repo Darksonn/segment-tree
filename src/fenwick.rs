@@ -1,12 +1,94 @@
 use ops::{CommutativeOperation, Inverse};
 use std::marker::PhantomData;
 
+use std::default::Default;
+use std::hash::{Hash, Hasher};
+
 /// This data structure allows prefix queries and single element modification.
 ///
 /// This tree allocates `n * sizeof(N)` bytes of memory, and can be resized.
 ///
 /// This data structure is implemented using a fenwick tree, which is also known as a binary
 /// indexed tree.
+///
+///# Examples
+///
+/// Showcase of functionality:
+///
+///```rust
+///use segment_tree::ops::Add;
+///use segment_tree::PrefixPoint;
+///
+///let buf = vec![10, 5, 30, 40];
+///
+///let mut pp: PrefixPoint<_, Add> = PrefixPoint::build(buf);
+///
+/// // If we query, we get the sum up until the specified value.
+///assert_eq!(pp.query(0), 10);
+///assert_eq!(pp.query(1), 15);
+///assert_eq!(pp.query(2), 45);
+///assert_eq!(pp.query(3), 85);
+///
+/// // Add five to the second value.
+///pp.modify(1, 5);
+///assert_eq!(pp.query(0), 10);
+///assert_eq!(pp.query(1), 20);
+///assert_eq!(pp.query(2), 50);
+///assert_eq!(pp.query(3), 90);
+///
+/// // Multiply every value with 2.
+///pp.map(|v| *v *= 2);
+///assert_eq!(pp.query(0), 20);
+///assert_eq!(pp.query(1), 40);
+///assert_eq!(pp.query(2), 100);
+///assert_eq!(pp.query(3), 180);
+///
+/// // Divide with two to undo.
+///pp.map(|v| *v /= 2);
+/// // Add some more values.
+///pp.append(vec![0, 10]);
+///assert_eq!(pp.query(0), 10);
+///assert_eq!(pp.query(1), 20);
+///assert_eq!(pp.query(2), 50);
+///assert_eq!(pp.query(3), 90);
+///assert_eq!(pp.query(4), 90);
+///assert_eq!(pp.query(5), 100);
+///
+/// // Get the values.
+///assert_eq!(pp.get(0), 10);
+///assert_eq!(pp.get(1), 10);
+///assert_eq!(pp.get(2), 30);
+///assert_eq!(pp.get(3), 40);
+///assert_eq!(pp.get(4), 0);
+///assert_eq!(pp.get(5), 10);
+///
+/// // Remove the last value
+///pp.truncate(5);
+///assert_eq!(pp.get(0), 10);
+///assert_eq!(pp.get(1), 10);
+///assert_eq!(pp.get(2), 30);
+///assert_eq!(pp.get(3), 40);
+///assert_eq!(pp.get(4), 0);
+///
+/// // Get back the original values.
+///assert_eq!(pp.unwrap(), vec![10, 10, 30, 40, 0]);
+///```
+///
+/// You can also use other operators:
+///
+///```rust
+///use segment_tree::ops::Mul;
+///use segment_tree::PrefixPoint;
+///
+///let buf = vec![10, 5, 30, 40];
+///
+///let mut pp: PrefixPoint<_, Mul> = PrefixPoint::build(buf);
+///
+///assert_eq!(pp.query(0), 10);
+///assert_eq!(pp.query(1), 50);
+///assert_eq!(pp.query(2), 1500);
+///assert_eq!(pp.query(3), 60000);
+///```
 pub struct PrefixPoint<N, O> where O: CommutativeOperation<N> {
     buf: Vec<N>,
     op: PhantomData<O>
@@ -149,6 +231,18 @@ impl<N: Clone, O: CommutativeOperation<N>> Clone for PrefixPoint<N, O> {
         PrefixPoint {
             buf: self.buf.clone(), op: PhantomData
         }
+    }
+}
+impl<N, O: CommutativeOperation<N>> Default for PrefixPoint<N, O> {
+    #[inline]
+    fn default() -> PrefixPoint<N, O> {
+        PrefixPoint { buf: Vec::new(), op: PhantomData }
+    }
+}
+impl<'a, N: 'a + Hash, O: CommutativeOperation<N>> Hash for PrefixPoint<N, O> {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.buf.hash(state);
     }
 }
 

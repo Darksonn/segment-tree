@@ -1,5 +1,8 @@
 use std::marker::PhantomData;
-use std::mem;
+use std::{mem, fmt};
+use std::cmp::{PartialEq, Eq};
+use std::default::Default;
+use std::hash::{Hash, Hasher};
 
 use ops::{Operation, CommutativeOperation, Identity};
 use maybe_owned::MaybeOwned;
@@ -10,6 +13,78 @@ use maybe_owned::MaybeOwned;
 ///
 /// This tree is implemented using a segment tree.  A segment tree is a binary tree where each node
 /// contains the combination of the children under the operation.
+///
+///# Examples
+///
+/// This data structure allows solving the [range minimum query][1] problem in logaritmic time.
+///
+///```rust
+///use segment_tree::SegmentPoint;
+///use segment_tree::ops::Min;
+///
+/// // make a segment point
+///let mut tree: SegmentPoint<_, Min> = SegmentPoint::build(
+///    vec![10, 5, 6, 4, 12, 8, 9, 3, 2, 1, 5]
+///); //     0  1  2  3   4  5  6  7  8  9 10  - indices
+///
+/// // find the minimum value in a few intervals
+///assert_eq!(tree.query(0, 2), Some(5));
+///assert_eq!(tree.query(4, 8), Some(3));
+///assert_eq!(tree.query(3, 11), Some(1));
+///assert_eq!(tree.query(0, 11), Some(1));
+///
+/// // query returns None if given an invalid interval
+///assert_eq!(tree.query(4, 2), None);
+///
+/// // if we want to avoid cloning, we can use noclone_query:
+///use segment_tree::maybe_owned::MaybeOwned;
+///assert_eq!(tree.noclone_query(4, 9), Some(MaybeOwned::Owned(2)));
+/// // note that the Eq implementation of MaybeOwned considers Owned and Borrowed equal if their
+/// // contents are equal
+///
+/// // since minimum is commutative, we can use quick_query
+///assert_eq!(tree.quick_query(3, 11), 1);
+///
+/// // let's update a few values
+///tree.modify(1, 3);
+///assert_eq!(tree.quick_query(0, 2), 3);
+///assert_eq!(tree.quick_query(5, 8), 3);
+///
+///tree.modify(3, 0);
+///assert_eq!(tree.quick_query(2, 8), 0);
+///
+/// // we can view the values currently stored at any time
+///assert_eq!(tree.view(), &[10, 3, 6, 0, 12, 8, 9, 3, 2, 1, 5]);
+///```
+///
+///We can also use a `SegmentPoint` to find the sum of any interval, by changing the operator to
+///[`Add`].
+///
+///```rust
+///use segment_tree::SegmentPoint;
+///use segment_tree::ops::Add;
+///
+/// // make a segment point
+///let mut tree: SegmentPoint<_, Add> = SegmentPoint::build(
+///    vec![10, 5, 6, 4, 12, 8, 9, 3, 2, 1, 5]
+///); //     0  1  2  3   4  5  6  7  8  9 10  - indices
+///
+///assert_eq!(tree.quick_query(4, 8), 12 + 8 + 9 + 3);
+///assert_eq!(tree.quick_query(1, 3), 5 + 6);
+///
+/// // quick_query returns the identity if given an invalid interval
+///assert_eq!(tree.quick_query(3, 1), 0);
+///
+/// // we can still modify values in the tree
+///tree.modify(2, 4);
+///assert_eq!(tree.quick_query(1, 3), 5 + 4);
+///assert_eq!(tree.quick_query(4, 8), 12 + 8 + 9 + 3);
+///
+///assert_eq!(tree.view(), &[10, 5, 4, 4, 12, 8, 9, 3, 2, 1, 5]);
+///```
+///
+/// [1]: https://en.wikipedia.org/wiki/Range_minimum_query
+/// [`Add`]: ops/struct.Add.html
 pub struct SegmentPoint<N, O> where O: Operation<N> {
     buf: Vec<N>,
     n: usize,
@@ -162,6 +237,29 @@ impl<N, O: Operation<N>> SegmentPoint<N, O> {
     /// Uses `O(len)` time.
     ///
     /// This function panics if the size of the buffer is odd.
+    ///
+    ///# Example
+    ///
+    ///```rust
+    ///use segment_tree::SegmentPoint;
+    ///use segment_tree::ops::Min;
+    ///
+    /// // make a segment point using the other build method
+    ///let mut tree: SegmentPoint<_, Min> = SegmentPoint::build(
+    ///    vec![1, 2, 3, 4]
+    ///);
+    /// // make a segment point using the build_noalloc method:
+    ///let mut tree1: SegmentPoint<_, Min> = SegmentPoint::build_noalloc(
+    ///    vec![3282, 210, 0, 245, 1, 2, 3, 4]  // the first half of the values are ignored
+    ///);
+    ///assert_eq!(tree, tree1);
+    ///
+    ///let mut tree2: SegmentPoint<_, Min> = SegmentPoint::build_noalloc(
+    ///    vec![0, 0, 0, 0, 1, 2, 3, 4]  // we can also try some other first few values
+    ///);
+    ///assert_eq!(tree1, tree2);
+    ///assert_eq!(tree, tree2);
+    ///```
     pub fn build_noalloc(mut buf: Vec<N>) -> SegmentPoint<N, O> {
         let len = buf.len();
         let n = len >> 1;
@@ -211,6 +309,44 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> SegmentPoint<N, O> {
             l >>= 1; r >>= 1;
         }
         res
+    }
+}
+
+impl<N: Clone, O: Operation<N>> Clone for SegmentPoint<N, O> {
+    #[inline]
+    fn clone(&self) -> SegmentPoint<N, O> {
+        SegmentPoint {
+            buf: self.buf.clone(), n: self.n, op: PhantomData
+        }
+    }
+}
+impl<N: fmt::Debug, O: Operation<N>> fmt::Debug for SegmentPoint<N, O> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SegmentPoint({:?})", self.view())
+    }
+}
+impl<N: PartialEq, O: Operation<N>> PartialEq for SegmentPoint<N, O> {
+    #[inline]
+    fn eq(&self, other: &SegmentPoint<N, O>) -> bool {
+        self.view().eq(other.view())
+    }
+    #[inline]
+    fn ne(&self, other: &SegmentPoint<N, O>) -> bool {
+        self.view().ne(other.view())
+    }
+}
+impl<N: Eq, O: Operation<N>> Eq for SegmentPoint<N, O> { }
+impl<N, O: Operation<N>> Default for SegmentPoint<N, O> {
+    #[inline]
+    fn default() -> SegmentPoint<N, O> {
+        SegmentPoint { buf: Vec::new(), n: 0, op: PhantomData }
+    }
+}
+impl<'a, N: 'a + Hash, O: Operation<N>> Hash for SegmentPoint<N, O> {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.view().hash(state);
     }
 }
 

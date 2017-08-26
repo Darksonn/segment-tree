@@ -2,6 +2,8 @@ use std::marker::PhantomData;
 use std::mem;
 use std::iter::repeat;
 
+use std::default::Default;
+
 use ops::{CommutativeOperation, Identity};
 
 /// This data structure allows range modification and single element queries.
@@ -10,6 +12,35 @@ use ops::{CommutativeOperation, Identity};
 ///
 /// This tree is implemented using a binary tree, where each node contains the changes that need
 /// to be propogated to its children.
+///
+///# Examples
+///
+/// Quickly add something to every value in some interval.
+///
+///```rust
+///use segment_tree::PointSegment;
+///use segment_tree::ops::Add;
+///
+///use std::iter::repeat;
+///
+/// // make a giant tree of zeroes
+///let mut tree: PointSegment<_, Add> = PointSegment::build(repeat(0).take(1_000_000).collect());
+///
+/// // add one to every value between 200 and 1000
+///tree.modify(200, 500_000, 1);
+///assert_eq!(tree.query(100), 0);
+///assert_eq!(tree.query(200), 1);
+///assert_eq!(tree.query(500), 1);
+///assert_eq!(tree.query(499_999), 1);
+///assert_eq!(tree.query(500_000), 0);
+///
+/// // add five to every value between 0 and 1000
+///tree.modify(0, 1000, 5);
+///assert_eq!(tree.query(10), 5);
+///assert_eq!(tree.query(500), 6);
+///assert_eq!(tree.query(10_000), 1);
+///assert_eq!(tree.query(600_000), 0);
+///```
 pub struct PointSegment<N, O> where O: CommutativeOperation<N> + Identity<N> {
     buf: Vec<N>,
     n: usize,
@@ -93,6 +124,21 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.n
+    }
+}
+
+impl<N: Clone, O: Identity<N> + CommutativeOperation<N>> Clone for PointSegment<N, O> {
+    #[inline]
+    fn clone(&self) -> PointSegment<N, O> {
+        PointSegment {
+            buf: self.buf.clone(), n: self.n, op: PhantomData
+        }
+    }
+}
+impl<N, O: Identity<N> + CommutativeOperation<N>> Default for PointSegment<N, O> {
+    #[inline]
+    fn default() -> PointSegment<N, O> {
+        PointSegment { buf: Vec::new(), n: 0, op: PhantomData }
     }
 }
 
