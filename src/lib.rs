@@ -18,11 +18,15 @@
 //! However it has the advantage that it uses half the memory and the size of the array can be
 //! changed.
 //!
+//! This crate has an optional feature `num-ops` that add implementations of the types from the
+//! `num` crate to [`ops`].
+//!
 //! [1]: https://en.wikipedia.org/wiki/Range_minimum_query
 //! [2]: ops/trait.CommutativeOperation.html
 //! [`SegmentPoint`]: struct.SegmentPoint.html
 //! [`PointSegment`]: struct.PointSegment.html
 //! [`PrefixPoint`]: struct.PrefixPoint.html
+//! [`ops`]: ops/index.html
 
 pub mod ops;
 pub mod maybe_owned;
@@ -36,3 +40,6 @@ mod range_query;
 
 #[cfg(test)]
 extern crate rand;
+
+#[cfg(feature = "num-ops")]
+extern crate num;

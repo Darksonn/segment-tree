@@ -7,9 +7,12 @@
 //! [`Operation`]: trait.Operation.html
 //! [`CommutativeOperation`]: trait.CommutativeOperation.html
 
-use std::{cmp, ops};
+use std::cmp;
 use std::marker::PhantomData;
 use std::num::Wrapping;
+
+#[cfg(feature = "num-ops")]
+mod num;
 
 /// A trait that specifies which associative operator to use in a segment tree.
 pub trait Operation<N> {
@@ -73,218 +76,121 @@ pub trait Inverse<N> {
 
 /// Each node contains the sum of the interval it represents.
 pub struct Add;
-impl<T: ops::Add<Output=T> + Copy> Operation<T> for Add {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        *a + *b
-    }
-}
-impl<T: ops::Sub<Output=T> + Copy> Inverse<T> for Add {
-    #[inline(always)]
-    fn uncombine(a: &mut T, b: &T) {
-        *a = *a - *b
-    }
-}
-impl<T: ops::Add<Output=T> + Copy> CommutativeOperation<T> for Add {}
-impl Identity<u8> for Add { fn identity() -> u8 { 0 } }
-impl Identity<u16> for Add { fn identity() -> u16 { 0 } }
-impl Identity<u32> for Add { fn identity() -> u32 { 0 } }
-impl Identity<u64> for Add { fn identity() -> u64 { 0 } }
-impl Identity<i8> for Add { fn identity() -> i8 { 0 } }
-impl Identity<i16> for Add { fn identity() -> i16 { 0 } }
-impl Identity<i32> for Add { fn identity() -> i32 { 0 } }
-impl Identity<i64> for Add { fn identity() -> i64 { 0 } }
-impl Identity<f32> for Add { fn identity() -> f32 { 0.0 } }
-impl Identity<f64> for Add { fn identity() -> f64 { 0.0 } }
-impl Identity<usize> for Add { fn identity() -> usize { 0 } }
-impl Identity<isize> for Add { fn identity() -> isize { 0 } }
-impl<T> Identity<Wrapping<T>> for Add where Add: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
-    }
-}
-
 /// Each node contains the product of the interval it represents.
 pub struct Mul;
-impl<T: ops::Mul<Output=T> + Copy> Operation<T> for Mul {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        *a * *b
-    }
-}
-impl<T: ops::Div<Output=T> + Copy> Inverse<T> for Mul {
-    #[inline(always)]
-    fn uncombine(a: &mut T, b: &T) {
-        *a = *a / *b
-    }
-}
-impl CommutativeOperation<u8> for Mul {}
-impl CommutativeOperation<u16> for Mul {}
-impl CommutativeOperation<u32> for Mul {}
-impl CommutativeOperation<u64> for Mul {}
-impl CommutativeOperation<i8> for Mul {}
-impl CommutativeOperation<i16> for Mul {}
-impl CommutativeOperation<i32> for Mul {}
-impl CommutativeOperation<i64> for Mul {}
-impl CommutativeOperation<usize> for Mul {}
-impl CommutativeOperation<isize> for Mul {}
-impl CommutativeOperation<f32> for Mul {}
-impl CommutativeOperation<f64> for Mul {}
-impl<T: Copy> CommutativeOperation<Wrapping<T>> for Mul where Mul: CommutativeOperation<T>, Wrapping<T>: ops::Mul<Output=Wrapping<T>> {}
-impl Identity<u8> for Mul { fn identity() -> u8 { 1 } }
-impl Identity<u16> for Mul { fn identity() -> u16 { 1 } }
-impl Identity<u32> for Mul { fn identity() -> u32 { 1 } }
-impl Identity<u64> for Mul { fn identity() -> u64 { 1 } }
-impl Identity<i8> for Mul { fn identity() -> i8 { 1 } }
-impl Identity<i16> for Mul { fn identity() -> i16 { 1 } }
-impl Identity<i32> for Mul { fn identity() -> i32 { 1 } }
-impl Identity<i64> for Mul { fn identity() -> i64 { 1 } }
-impl Identity<f32> for Mul { fn identity() -> f32 { 1.0 } }
-impl Identity<f64> for Mul { fn identity() -> f64 { 1.0 } }
-impl Identity<usize> for Mul { fn identity() -> usize { 1 } }
-impl Identity<isize> for Mul { fn identity() -> isize { 1 } }
-impl<T> Identity<Wrapping<T>> for Mul where Mul: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
-    }
-}
-
-
 /// Each node contains the bitwise xor of the interval it represents.
 pub struct Xor;
-impl<T: ops::BitXor<Output=T> + Copy> Operation<T> for Xor {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        *a ^ *b
-    }
-}
-impl<T: ops::BitXor<Output=T> + Copy> Inverse<T> for Xor {
-    #[inline(always)]
-    fn uncombine(a: &mut T, b: &T) {
-        *a = *a ^ *b
-    }
-}
-impl CommutativeOperation<u8> for Xor {}
-impl CommutativeOperation<u16> for Xor {}
-impl CommutativeOperation<u32> for Xor {}
-impl CommutativeOperation<u64> for Xor {}
-impl CommutativeOperation<i8> for Xor {}
-impl CommutativeOperation<i16> for Xor {}
-impl CommutativeOperation<i32> for Xor {}
-impl CommutativeOperation<i64> for Xor {}
-impl CommutativeOperation<usize> for Xor {}
-impl CommutativeOperation<isize> for Xor {}
-impl<T: Copy> CommutativeOperation<Wrapping<T>> for Xor where Xor: CommutativeOperation<T>, Wrapping<T>: ops::BitXor<Output=Wrapping<T>> {}
-impl Identity<u8> for Xor { fn identity() -> u8 { 0 } }
-impl Identity<u16> for Xor { fn identity() -> u16 { 0 } }
-impl Identity<u32> for Xor { fn identity() -> u32 { 0 } }
-impl Identity<u64> for Xor { fn identity() -> u64 { 0 } }
-impl Identity<i8> for Xor { fn identity() -> i8 { 0 } }
-impl Identity<i16> for Xor { fn identity() -> i16 { 0 } }
-impl Identity<i32> for Xor { fn identity() -> i32 { 0 } }
-impl Identity<i64> for Xor { fn identity() -> i64 { 0 } }
-impl Identity<usize> for Xor { fn identity() -> usize { 0 } }
-impl Identity<isize> for Xor { fn identity() -> isize { 0 } }
-impl<T> Identity<Wrapping<T>> for Xor where Xor: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
-    }
-}
-
 /// Each node contains the bitwise and of the interval it represents.
 pub struct And;
-impl<T: ops::BitAnd<Output=T> + Copy> Operation<T> for And {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        *a & *b
-    }
-}
-impl CommutativeOperation<u8> for And {}
-impl CommutativeOperation<u16> for And {}
-impl CommutativeOperation<u32> for And {}
-impl CommutativeOperation<u64> for And {}
-impl CommutativeOperation<i8> for And {}
-impl CommutativeOperation<i16> for And {}
-impl CommutativeOperation<i32> for And {}
-impl CommutativeOperation<i64> for And {}
-impl CommutativeOperation<usize> for And {}
-impl CommutativeOperation<isize> for And {}
-impl<T: Copy> CommutativeOperation<Wrapping<T>> for And where And: CommutativeOperation<T>, Wrapping<T>: ops::BitAnd<Output=Wrapping<T>> {}
-impl Identity<u8> for And { fn identity() -> u8 { !0 } }
-impl Identity<u16> for And { fn identity() -> u16 { !0 } }
-impl Identity<u32> for And { fn identity() -> u32 { !0 } }
-impl Identity<u64> for And { fn identity() -> u64 { !0 } }
-impl Identity<i8> for And { fn identity() -> i8 { !0 } }
-impl Identity<i16> for And { fn identity() -> i16 { !0 } }
-impl Identity<i32> for And { fn identity() -> i32 { !0 } }
-impl Identity<i64> for And { fn identity() -> i64 { !0 } }
-impl Identity<usize> for And { fn identity() -> usize { !0 } }
-impl Identity<isize> for And { fn identity() -> isize { !0 } }
-impl<T> Identity<Wrapping<T>> for And where And: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
-    }
-}
-
 /// Each node contains the bitwise or of the interval it represents.
 pub struct Or;
-impl<T: ops::BitOr<Output=T> + Copy> Operation<T> for Or {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        *a | *b
+
+macro_rules! impl_primitive_op {
+    ($op:ty, $t:ty, $add:tt, $sub:tt, $iden:expr) => {
+        impl Operation<$t> for $op {
+            fn combine(a: &$t, b: &$t) -> $t {
+                *a $add *b
+            }
+        }
+        impl CommutativeOperation<$t> for $op {}
+        impl Identity<$t> for $op {
+            fn identity() -> $t {
+                ($iden) as $t
+            }
+        }
+        impl Inverse<$t> for $op {
+            fn uncombine(a: &mut $t, b: &$t) {
+                *a = *a $sub *b;
+            }
+        }
+    };
+}
+macro_rules! impl_primitive_op_wrapping {
+    ($op:ty, $t:ty, $add:tt, $sub:tt, $iden:expr) => {
+        impl Operation<Wrapping<$t>> for $op {
+            fn combine(a: &Wrapping<$t>, b: &Wrapping<$t>) -> Wrapping<$t> {
+                *a $add *b
+            }
+        }
+        impl CommutativeOperation<Wrapping<$t>> for $op {}
+        impl Identity<Wrapping<$t>> for $op {
+            fn identity() -> Wrapping<$t> {
+                Wrapping(($iden) as $t)
+            }
+        }
+        impl Inverse<Wrapping<$t>> for $op {
+            fn uncombine(a: &mut Wrapping<$t>, b: &Wrapping<$t>) {
+                *a = *a $sub *b;
+            }
+        }
     }
 }
-impl CommutativeOperation<u8> for Or {}
-impl CommutativeOperation<u16> for Or {}
-impl CommutativeOperation<u32> for Or {}
-impl CommutativeOperation<u64> for Or {}
-impl CommutativeOperation<i8> for Or {}
-impl CommutativeOperation<i16> for Or {}
-impl CommutativeOperation<i32> for Or {}
-impl CommutativeOperation<i64> for Or {}
-impl CommutativeOperation<usize> for Or {}
-impl CommutativeOperation<isize> for Or {}
-impl<T: Copy> CommutativeOperation<Wrapping<T>> for Or where Or: CommutativeOperation<T>, Wrapping<T>: ops::BitOr<Output=Wrapping<T>> {}
-impl Identity<u8> for Or { fn identity() -> u8 { 0 } }
-impl Identity<u16> for Or { fn identity() -> u16 { 0 } }
-impl Identity<u32> for Or { fn identity() -> u32 { 0 } }
-impl Identity<u64> for Or { fn identity() -> u64 { 0 } }
-impl Identity<i8> for Or { fn identity() -> i8 { 0 } }
-impl Identity<i16> for Or { fn identity() -> i16 { 0 } }
-impl Identity<i32> for Or { fn identity() -> i32 { 0 } }
-impl Identity<i64> for Or { fn identity() -> i64 { 0 } }
-impl Identity<usize> for Or { fn identity() -> usize { 0 } }
-impl Identity<isize> for Or { fn identity() -> isize { 0 } }
-impl<T> Identity<Wrapping<T>> for Or where Or: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
+macro_rules! impl_primitive {
+    ($t:ty) => {
+        impl_primitive_op!(Add, $t, +, -, 0);
+        impl_primitive_op!(Mul, $t, *, /, 1);
+        impl_primitive_op!(Xor, $t, ^, ^, 0);
+        impl_primitive_op!(And, $t, ^, ^, 0);
+        impl_primitive_op!(Or, $t, ^, ^, 0);
+        impl_primitive_op_wrapping!(Add, $t, +, -, 0);
+        impl_primitive_op_wrapping!(Mul, $t, *, /, 1);
+        impl_primitive_op_wrapping!(Xor, $t, +, -, 0);
+        impl_primitive_op_wrapping!(And, $t, *, /, 1);
+        impl_primitive_op_wrapping!(Or, $t, *, /, 1);
     }
 }
+impl_primitive!(u8);
+impl_primitive!(u16);
+impl_primitive!(u32);
+impl_primitive!(u64);
+impl_primitive!(i8);
+impl_primitive!(i16);
+impl_primitive!(i32);
+impl_primitive!(i64);
+impl_primitive!(usize);
+impl_primitive!(isize);
+impl_primitive_op!(Add, f32, +, -, 0);
+impl_primitive_op!(Mul, f32, *, /, 1);
+impl_primitive_op!(Add, f64, +, -, 0);
+impl_primitive_op!(Mul, f64, *, /, 1);
 
 /// Each node contains the maximum value in the interval it represents.
 pub struct Max;
-impl<T: cmp::Ord + Copy> Operation<T> for Max {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        cmp::max(*a, *b)
+/// Each node contains the minimum value in the interval it represents.
+pub struct Min;
+
+macro_rules! impl_cmp_primitive_aux {
+    ($t:ty, $cmpt:ty, $cmp:tt, $iden:expr) => {
+        impl Operation<$t> for $cmpt {
+            #[inline(always)]
+            fn combine(a: &$t, b: &$t) -> $t {
+                cmp::$cmp(*a, *b)
+            }
+        }
+        impl CommutativeOperation<$t> for $cmpt {}
+        impl Identity<$t> for $cmpt {
+            fn identity() -> $t {
+                $iden
+            }
+        }
     }
 }
-impl<T: cmp::Ord + Copy> CommutativeOperation<T> for Max {}
-impl Identity<u8>  for Max { fn identity() -> u8  { ::std::u8::MIN  } }
-impl Identity<u16> for Max { fn identity() -> u16 { ::std::u16::MIN } }
-impl Identity<u32> for Max { fn identity() -> u32 { ::std::u32::MIN } }
-impl Identity<u64> for Max { fn identity() -> u64 { ::std::u64::MIN } }
-impl Identity<i8>  for Max { fn identity() -> i8  { ::std::i8::MIN  } }
-impl Identity<i16> for Max { fn identity() -> i16 { ::std::i16::MIN } }
-impl Identity<i32> for Max { fn identity() -> i32 { ::std::i32::MIN } }
-impl Identity<i64> for Max { fn identity() -> i64 { ::std::i64::MIN } }
-impl Identity<usize> for Max { fn identity() -> usize { ::std::usize::MIN } }
-impl Identity<isize> for Max { fn identity() -> isize { ::std::isize::MIN } }
-impl<T> Identity<Wrapping<T>> for Max where Max: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
+macro_rules! impl_cmp_primitive {
+    ($t:tt) => {
+        impl_cmp_primitive_aux!($t, Max, max, ::std::$t::MIN);
+        impl_cmp_primitive_aux!($t, Min, min, ::std::$t::MAX);
     }
 }
+impl_cmp_primitive!(u8);
+impl_cmp_primitive!(u16);
+impl_cmp_primitive!(u32);
+impl_cmp_primitive!(u64);
+impl_cmp_primitive!(i8);
+impl_cmp_primitive!(i16);
+impl_cmp_primitive!(i32);
+impl_cmp_primitive!(i64);
+impl_cmp_primitive!(usize);
+impl_cmp_primitive!(isize);
 
 /// Variant of [`Max`] that considers NaN smaller than anything.
 ///
@@ -323,31 +229,6 @@ impl Operation<f64> for MaxTakeNaN {
 }
 impl Identity<f32> for MaxTakeNaN { fn identity() -> f32 { ::std::f32::NEG_INFINITY } }
 impl Identity<f64> for MaxTakeNaN { fn identity() -> f64 { ::std::f64::NEG_INFINITY } }
-
-/// Each node contains the minimum value in the interval it represents.
-pub struct Min;
-impl<T: cmp::Ord + Copy> Operation<T> for Min {
-    #[inline(always)]
-    fn combine(a: &T, b: &T) -> T {
-        cmp::min(*a, *b)
-    }
-}
-impl<T: cmp::Ord + Copy> CommutativeOperation<T> for Min {}
-impl Identity<u8>  for Min { fn identity() -> u8  { ::std::u8::MAX  } }
-impl Identity<u16> for Min { fn identity() -> u16 { ::std::u16::MAX } }
-impl Identity<u32> for Min { fn identity() -> u32 { ::std::u32::MAX } }
-impl Identity<u64> for Min { fn identity() -> u64 { ::std::u64::MAX } }
-impl Identity<i8>  for Min { fn identity() -> i8  { ::std::i8::MAX  } }
-impl Identity<i16> for Min { fn identity() -> i16 { ::std::i16::MAX } }
-impl Identity<i32> for Min { fn identity() -> i32 { ::std::i32::MAX } }
-impl Identity<i64> for Min { fn identity() -> i64 { ::std::i64::MAX } }
-impl Identity<usize> for Min { fn identity() -> usize { ::std::usize::MAX } }
-impl Identity<isize> for Min { fn identity() -> isize { ::std::isize::MAX } }
-impl<T> Identity<Wrapping<T>> for Min where Min: Identity<T> {
-    fn identity() -> Wrapping<T> {
-        Wrapping(Self::identity())
-    }
-}
 
 /// Variant of [`Min`] that considers NaN larger than anything.
 ///
