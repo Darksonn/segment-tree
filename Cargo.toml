@@ -1,7 +1,13 @@
 [package]
 name = "segment-tree"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Alice Ryhl <alice@ryhl.io>"]
+description = "Quickly perform interval queries or modifications in some array."
+repository = "https://github.com/Darksonn/segment-tree"
+readme = "README.md"
+keywords = ["segment", "tree", "rmq", "query", "interval"]
+categories = ["data-structures", "algorithms"]
+license = "MIT"
 
 [dependencies]
 
