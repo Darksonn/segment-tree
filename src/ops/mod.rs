@@ -10,7 +10,7 @@
 use std::cmp;
 use std::num::Wrapping;
 
-#[cfg(feature = "num-ops")]
+#[cfg(feature = "with-num")]
 mod num;
 
 /// A trait that specifies which associative operator to use in a segment tree.

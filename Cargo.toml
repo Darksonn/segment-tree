@@ -2,7 +2,7 @@
 name = "segment-tree"
 version = "2.0.0-git"
 authors = ["Alice Ryhl <alice@ryhl.io>"]
-description = "Quickly perform interval queries or modifications in some array."
+description = "Quickly perform interval queries or modifications in some array.  Works on stable."
 repository = "https://github.com/Darksonn/segment-tree"
 readme = "README.md"
 keywords = ["segment", "tree", "rmq", "query", "interval"]
@@ -10,7 +10,7 @@ categories = ["data-structures", "algorithms"]
 license = "MIT"
 
 [features]
-num-ops = ["num"]
+with-num = ["num"]
 
 [dependencies]
 num = { version = "0.1", optional = true }

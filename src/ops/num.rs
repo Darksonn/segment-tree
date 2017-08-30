@@ -1,4 +1,4 @@
-//! This module requires the `num-ops` feature and supplies implementations for various types from
+//! This module requires the `with-num` feature and supplies implementations for various types from
 //! the `num` crate.
 
 use ops::{Operation, CommutativeOperation, Identity, Inverse};

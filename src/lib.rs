@@ -18,7 +18,7 @@
 //! However it has the advantage that it uses half the memory and the size of the array can be
 //! changed.
 //!
-//! This crate has an optional feature `num-ops` that add implementations of the types from the
+//! This crate has an optional feature `with-num` that add implementations of the types from the
 //! `num` crate to [`ops`].
 //!
 //! [1]: https://en.wikipedia.org/wiki/Range_minimum_query
@@ -41,5 +41,5 @@ mod segment_tree;
 #[cfg(test)]
 extern crate rand;
 
-#[cfg(feature = "num-ops")]
+#[cfg(feature = "with-num")]
 extern crate num;
