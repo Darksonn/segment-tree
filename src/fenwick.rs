@@ -94,7 +94,7 @@ pub struct PrefixPoint<N, O> where O: CommutativeOperation<N> {
     op: PhantomData<O>
 }
 
-/// Returns the least significant bit which is one.
+/// Returns the least significant bit that is one.
 #[inline(always)]
 fn lsb(i: usize) -> usize {
     i & (1 + !i)
