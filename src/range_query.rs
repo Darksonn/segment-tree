@@ -36,22 +36,22 @@ use maybe_owned::MaybeOwned;
 /// // query returns None if given an invalid interval
 ///assert_eq!(tree.query(4, 2), None);
 ///
-/// // if we want to avoid cloning, we can use noclone_query:
+/// // if we want to avoid cloning, we can use query_noclone:
 ///use segment_tree::maybe_owned::MaybeOwned;
-///assert_eq!(tree.noclone_query(4, 9), Some(MaybeOwned::Owned(2)));
+///assert_eq!(tree.query_noclone(4, 9), Some(MaybeOwned::Owned(2)));
 /// // note that the Eq implementation of MaybeOwned considers Owned and Borrowed equal if
 /// // their contents are equal
 ///
-/// // since minimum is commutative, we can use quick_query
-///assert_eq!(tree.quick_query(3, 11), 1);
+/// // since minimum is commutative, we can use query_commut
+///assert_eq!(tree.query_commut(3, 11), 1);
 ///
 /// // let's update a few values
 ///tree.modify(1, 3);
-///assert_eq!(tree.quick_query(0, 2), 3);
-///assert_eq!(tree.quick_query(5, 8), 3);
+///assert_eq!(tree.query_commut(0, 2), 3);
+///assert_eq!(tree.query_commut(5, 8), 3);
 ///
 ///tree.modify(3, 0);
-///assert_eq!(tree.quick_query(2, 8), 0);
+///assert_eq!(tree.query_commut(2, 8), 0);
 ///
 /// // we can view the values currently stored at any time
 ///assert_eq!(tree.view(), &[10, 3, 6, 0, 12, 8, 9, 3, 2, 1, 5]);
@@ -69,16 +69,16 @@ use maybe_owned::MaybeOwned;
 ///    vec![10, 5, 6, 4, 12, 8, 9, 3, 2, 1, 5]
 ///); //     0  1  2  3   4  5  6  7  8  9 10  - indices
 ///
-///assert_eq!(tree.quick_query(4, 8), 12 + 8 + 9 + 3);
-///assert_eq!(tree.quick_query(1, 3), 5 + 6);
+///assert_eq!(tree.query_commut(4, 8), 12 + 8 + 9 + 3);
+///assert_eq!(tree.query_commut(1, 3), 5 + 6);
 ///
-/// // quick_query returns the identity if given an invalid interval
-///assert_eq!(tree.quick_query(3, 1), 0);
+/// // query_commut returns the identity if given an invalid interval
+///assert_eq!(tree.query_commut(3, 1), 0);
 ///
 /// // we can still modify values in the tree
 ///tree.modify(2, 4);
-///assert_eq!(tree.quick_query(1, 3), 5 + 4);
-///assert_eq!(tree.quick_query(4, 8), 12 + 8 + 9 + 3);
+///assert_eq!(tree.query_commut(1, 3), 5 + 4);
+///assert_eq!(tree.query_commut(4, 8), 12 + 8 + 9 + 3);
 ///
 ///assert_eq!(tree.view(), &[10, 5, 4, 4, 12, 8, 9, 3, 2, 1, 5]);
 ///```
@@ -114,10 +114,10 @@ impl<N, O: Operation<N>> SegmentPoint<N, O> {
     /// If `l >= r`, this method returns `None`.  This method clones at most twice and runs in
     /// `O(log(len))` time.
     ///
-    /// See [`quick_query`] or [`noclone_query`] for a version that doesn't clone.
+    /// See [`query_commut`] or [`query_noclone`] for a version that doesn't clone.
     ///
-    /// [`noclone_query`]: struct.SegmentPoint.html#method.noclone_query
-    /// [`quick_query`]: struct.SegmentPoint.html#method.quick_query
+    /// [`query_noclone`]: struct.SegmentPoint.html#method.query_noclone
+    /// [`query_commut`]: struct.SegmentPoint.html#method.query_commut
     pub fn query(&self, mut l: usize, mut r: usize) -> Option<N> where N: Clone {
         let mut resl = None;
         let mut resr = None;
@@ -152,11 +152,11 @@ impl<N, O: Operation<N>> SegmentPoint<N, O> {
     /// If `l >= r`, this method returns `None`.
     /// Uses `O(log(len))` time.
     ///
-    /// See also [`query`] and [`quick_query`].
+    /// See also [`query`] and [`query_commut`].
     ///
-    /// [`quick_query`]: struct.SegmentPoint.html#method.quick_query
+    /// [`query_commut`]: struct.SegmentPoint.html#method.query_commut
     /// [`query`]: struct.SegmentPoint.html#method.query
-    pub fn noclone_query<'a>(&'a self, mut l: usize, mut r: usize) -> Option<MaybeOwned<'a, N>> {
+    pub fn query_noclone<'a>(&'a self, mut l: usize, mut r: usize) -> Option<MaybeOwned<'a, N>> {
         let mut resl = None;
         let mut resr = None;
         l += self.n; r += self.n;
@@ -289,12 +289,12 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> SegmentPoint<N, O> {
     ///
     /// If `l >= r`, this method returns the identity.
     ///
-    /// See [`query`] or [`noclone_query`] for a version that works with non-[commutative operations][1].
+    /// See [`query`] or [`query_noclone`] for a version that works with non-[commutative operations][1].
     ///
     /// [`query`]: struct.SegmentPoint.html#method.query
-    /// [`noclone_query`]: struct.SegmentPoint.html#method.noclone_query
+    /// [`query_noclone`]: struct.SegmentPoint.html#method.query_noclone
     /// [1]: ops/trait.CommutativeOperation.html
-    pub fn quick_query(&self, mut l: usize, mut r: usize) -> N {
+    pub fn query_commut(&self, mut l: usize, mut r: usize) -> N {
         let mut res = O::identity();
         l += self.n; r += self.n;
         while l < r {
@@ -438,13 +438,13 @@ mod tests {
                 for j in i+1..n+1 {
                     println!("i: {}, j: {}", i, j);
                     assert_eq!(tree.query(i, j), Some(sum.sub(i, j)));
-                    assert_eq!(tree.noclone_query(i, j), Some(MaybeOwned::Owned(sum.sub(i, j))));
+                    assert_eq!(tree.query_noclone(i, j), Some(MaybeOwned::Owned(sum.sub(i, j))));
                 }
             }
         }
     }
     #[test]
-    fn segment_tree_quick_query() {
+    fn segment_tree_query_commut() {
         let mut rng = thread_rng();
         let vals: Vec<Wrapping<i32>> = rng.gen_iter().map(|i| Wrapping(i)).take(130).collect();
         for i in 0..vals.len() {
@@ -459,9 +459,9 @@ mod tests {
                 for j in i+1..n+1 {
                     println!("i: {}, j: {}", i, j);
                     if i == 0 {
-                        assert_eq!(tree.quick_query(i, j), buf[j-1]);
+                        assert_eq!(tree.query_commut(i, j), buf[j-1]);
                     } else {
-                        assert_eq!(tree.quick_query(i, j), buf[j-1] - buf[i-1]);
+                        assert_eq!(tree.query_commut(i, j), buf[j-1] - buf[i-1]);
                     }
                 }
             }
