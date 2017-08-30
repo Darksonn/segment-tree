@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 use std::mem;
-use std::iter::repeat;
 
 use std::default::Default;
 
@@ -64,11 +63,7 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
     /// Allocate a new buffer and build the tree using the values in the slice.
     /// Uses `O(len)` time.
     pub fn build_slice(buf: &[N]) -> PointSegment<N, O> where N: Clone {
-        let n = buf.len();
-        PointSegment {
-            buf: repeat(O::identity()).take(n).chain(buf.iter().cloned()).collect(),
-            n: n, op: PhantomData
-        }
+        PointSegment::build_iter(buf.iter().cloned())
     }
     /// Allocate a new buffer and build the tree using the values in the iterator.
     /// Uses `O(len)` time.
@@ -157,10 +152,11 @@ mod tests {
         let mut rng = thread_rng();
         for i in 1..130 {
             let mut buf: Vec<Num> = rng.gen_iter::<i32>().map(|i| Wrapping(i)).take(i).collect();
-            let mut tree: PointSegment<_,Add> = if i&1 == 1 {
-                PointSegment::build_slice(&buf[..])
-            } else {
-                PointSegment::build(buf.clone())
+            let mut tree: PointSegment<_,Add> = match i%3 {
+                0 => PointSegment::build_slice(&buf[..]),
+                1 => PointSegment::build_iter(buf.iter().cloned()),
+                2 => PointSegment::build(buf.clone()),
+                _ => unreachable!()
             };
             for (n, m, v) in rng.gen_iter::<(usize, usize, i32)>().take(10) {
                 let n = n % i;
