@@ -67,9 +67,25 @@ pub trait Identity<N> {
     fn identity(&self) -> N;
 }
 
-/// A trait that indicates that this operation is invertible.
+/// A trait for invertible operations.
 pub trait Invertible<N> {
-    /// Returns some value such that `combine(uncombine(a, b), b) = a`.
+    /// A method such that the following code will leave `a` in the same state as it started.
+    ///
+    ///```rust
+    ///# use segment_tree::ops::{Add, Operation, Invertible};
+    ///# let op = Add;
+    ///# let mut a = 1i32;
+    ///# let mut original_value_of_a = 1i32;
+    ///# let mut b = 2i32;
+    /// // after running these two methods, a should be unchanged:
+    ///op.combine_mut(&mut a, &b);
+    ///op.uncombine(&mut a, &b);
+    ///assert_eq!(a, original_value_of_a);
+    /// // a should also be unchanged after running them in the reverse order
+    ///op.uncombine(&mut a, &b);
+    ///op.combine_mut(&mut a, &b);
+    ///assert_eq!(a, original_value_of_a);
+    ///```
     fn uncombine(&self, a: &mut N, b: &N);
 }
 
