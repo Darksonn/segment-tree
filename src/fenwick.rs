@@ -208,6 +208,13 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
         }
         sum
     }
+    /// Change the value at the index to be the specified value.
+    /// Uses `O(log(i))` time.
+    pub fn set(&mut self, i: usize, mut value: N) where N: Clone {
+        let current = self.get(i);
+        O::uncombine(&mut value, &current);
+        self.modify(i, value);
+    }
     /// Compute the underlying array of values.
     /// Uses `O(len)` time.
     pub fn unwrap(self) -> Vec<N> {
@@ -326,6 +333,27 @@ mod tests {
                 }
                 vec[i] += diff[i];
                 fenwick.modify(i, diff[i]);
+            }
+        }
+    }
+    #[test]
+    fn fenwick_set() {
+        let mut rng = thread_rng();
+        for n in 0..130 {
+            let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let diff: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let mut fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.clone());
+            for i in 0..diff.len() {
+                let mut ps: Vec<Wrapping<i32>> = vec.clone();
+                compute_prefix_sum(&mut ps);
+                assert_eq!(fenwick.clone().unwrap(), vec);
+                assert_eq!(fenwick.clone().unwrap_clone(), vec);
+                for j in 0..vec.len() {
+                    assert_eq!(ps[j], fenwick.query(j));
+                    assert_eq!(vec[j], fenwick.get(j));
+                }
+                vec[i] = diff[i];
+                fenwick.set(i, diff[i]);
             }
         }
     }
