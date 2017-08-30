@@ -67,7 +67,7 @@ pub trait Identity<N> {
     fn identity(&self) -> N;
 }
 
-/// A trait that specifies that this operation is invertible.
+/// A trait that indicates that this operation is invertible.
 pub trait Invertible<N> {
     /// Returns some value such that `combine(uncombine(a, b), b) = a`.
     fn uncombine(&self, a: &mut N, b: &N);
