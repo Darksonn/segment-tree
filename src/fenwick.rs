@@ -1,4 +1,5 @@
 use ops::{CommutativeOperation, Inverse};
+use maybe_owned::MaybeOwned;
 use std::marker::PhantomData;
 
 use std::default::Default;
@@ -143,6 +144,21 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
         i -= lsb(1+i) - 1;
         while i > 0 {
             sum = O::combine_left(sum, &self.buf[i-1]);
+            i -= lsb(i);
+        }
+        sum
+    }
+    /// Computes `a[0] * a[1] * ... * a[i]`.  Note that `i` is inclusive.
+    /// Uses `O(log(i))` time.
+    #[inline]
+    pub fn query_noclone(&self, mut i: usize) -> MaybeOwned<N> {
+        let mut sum = MaybeOwned::Borrowed(&self.buf[i]);
+        i -= lsb(1+i) - 1;
+        while i > 0 {
+            sum = MaybeOwned::Owned(match sum {
+                MaybeOwned::Borrowed(ref v) => O::combine(v, &self.buf[i-1]),
+                MaybeOwned::Owned(v) => O::combine_left(v, &self.buf[i-1]),
+            });
             i -= lsb(i);
         }
         sum
@@ -297,6 +313,7 @@ mod tests {
             compute_prefix_sum(&mut vec);
             for i in 0..vec.len() {
                 assert_eq!(vec[i], fenwick.query(i));
+                assert_eq!(&vec[i], fenwick.query_noclone(i).as_ref());
             }
         }
     }
