@@ -1,6 +1,4 @@
-use std::marker::PhantomData;
 use std::mem;
-
 use std::default::Default;
 
 use ops::{CommutativeOperation, Identity};
@@ -23,8 +21,7 @@ use ops::{CommutativeOperation, Identity};
 ///use std::iter::repeat;
 ///
 /// // make a giant tree of zeroes
-///let mut tree: PointSegment<_, Add> = PointSegment::build(repeat(0).take(1_000_000)
-///                                                         .collect());
+///let mut tree = PointSegment::build(repeat(0).take(1_000_000).collect(), Add);
 ///
 /// // add one to every value between 200 and 1000
 ///tree.modify(200, 500_000, 1);
@@ -44,46 +41,46 @@ use ops::{CommutativeOperation, Identity};
 pub struct PointSegment<N, O> where O: CommutativeOperation<N> + Identity<N> {
     buf: Vec<N>,
     n: usize,
-    op: PhantomData<O>
+    op: O
 }
 
 impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
     /// Builds a tree using the given buffer. If the given buffer is less than half full, this
     /// function allocates.
     /// Uses `O(len)` time.
-    pub fn build(mut buf: Vec<N>) -> PointSegment<N, O> {
+    pub fn build(mut buf: Vec<N>, op: O) -> PointSegment<N, O> {
         let n = buf.len();
         buf.reserve_exact(n);
         for i in 0..n {
-            let val = mem::replace(&mut buf[i], O::identity());
+            let val = mem::replace(&mut buf[i], op.identity());
             buf.push(val);
         }
-        PointSegment { buf: buf, n: n, op: PhantomData }
+        PointSegment { buf: buf, n: n, op: op }
     }
     /// Allocate a new buffer and build the tree using the values in the slice.
     /// Uses `O(len)` time.
-    pub fn build_slice(buf: &[N]) -> PointSegment<N, O> where N: Clone {
-        PointSegment::build_iter(buf.iter().cloned())
+    pub fn build_slice(buf: &[N], op: O) -> PointSegment<N, O> where N: Clone {
+        PointSegment::build_iter(buf.iter().cloned(), op)
     }
     /// Allocate a new buffer and build the tree using the values in the iterator.
     /// Uses `O(len)` time.
-    pub fn build_iter<I: ExactSizeIterator<Item=N>>(iter: I) -> PointSegment<N, O> {
+    pub fn build_iter<I: ExactSizeIterator<Item=N>>(iter: I, op: O) -> PointSegment<N, O> {
         let n = iter.len();
         let mut buf = Vec::with_capacity(2*n);
-        for _ in 0..n { buf.push(O::identity()); }
+        for _ in 0..n { buf.push(op.identity()); }
         buf.extend(iter);
         PointSegment {
             buf: buf,
-            n: n, op: PhantomData
+            n: n, op: op
         }
     }
     /// Computes the value at `p`.
     /// Uses `O(log(len))` time.
     pub fn query(&self, mut p: usize) -> N {
         p += self.n;
-        let mut res = O::identity();
+        let mut res = self.op.identity();
         while p > 0 {
-            res = O::combine_left(res, &self.buf[p]);
+            res = self.op.combine_left(res, &self.buf[p]);
             p >>= 1;
         }
         res
@@ -94,12 +91,12 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
         l += self.n; r += self.n;
         while l < r {
             if l&1 == 1 {
-                O::combine_mut(&mut self.buf[l], &delta);
+                self.op.combine_mut(&mut self.buf[l], &delta);
                 l += 1;
             }
             if r&1 == 1 {
                 r -= 1;
-                O::combine_mut(&mut self.buf[r], &delta);
+                self.op.combine_mut(&mut self.buf[r], &delta);
             }
             l >>= 1; r >>= 1;
         }
@@ -109,9 +106,9 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
     /// Uses `O(len)` time.
     pub fn propogate(&mut self) -> &mut [N] {
         for i in 1..self.n {
-            let prev = mem::replace(&mut self.buf[i], O::identity());
-            O::combine_mut(&mut self.buf[i<<1], &prev);
-            O::combine_mut(&mut self.buf[i<<1|1], &prev);
+            let prev = mem::replace(&mut self.buf[i], self.op.identity());
+            self.op.combine_mut(&mut self.buf[i<<1], &prev);
+            self.op.combine_mut(&mut self.buf[i<<1|1], &prev);
         }
         &mut self.buf[self.n..]
     }
@@ -123,24 +120,24 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
     }
 }
 
-impl<N: Clone, O: Identity<N> + CommutativeOperation<N>> Clone for PointSegment<N, O> {
+impl<N: Clone, O: Identity<N> + CommutativeOperation<N> + Clone> Clone for PointSegment<N, O> {
     #[inline]
     fn clone(&self) -> PointSegment<N, O> {
         PointSegment {
-            buf: self.buf.clone(), n: self.n, op: PhantomData
+            buf: self.buf.clone(), n: self.n, op: self.op.clone()
         }
     }
 }
-impl<N, O: Identity<N> + CommutativeOperation<N>> Default for PointSegment<N, O> {
+impl<N, O: Identity<N> + CommutativeOperation<N> + Default> Default for PointSegment<N, O> {
     #[inline]
     fn default() -> PointSegment<N, O> {
-        PointSegment { buf: Vec::new(), n: 0, op: PhantomData }
+        PointSegment { buf: Vec::new(), n: 0, op: Default::default() }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use propogating::*;
+    use propagating::*;
     use ops::*;
     use rand::{Rng, thread_rng};
     use std::num::Wrapping;
@@ -152,10 +149,10 @@ mod tests {
         let mut rng = thread_rng();
         for i in 1..130 {
             let mut buf: Vec<Num> = rng.gen_iter::<i32>().map(|i| Wrapping(i)).take(i).collect();
-            let mut tree: PointSegment<_,Add> = match i%3 {
-                0 => PointSegment::build_slice(&buf[..]),
-                1 => PointSegment::build_iter(buf.iter().cloned()),
-                2 => PointSegment::build(buf.clone()),
+            let mut tree = match i%3 {
+                0 => PointSegment::build_slice(&buf[..], Add),
+                1 => PointSegment::build_iter(buf.iter().cloned(), Add),
+                2 => PointSegment::build(buf.clone(), Add),
                 _ => unreachable!()
             };
             for (n, m, v) in rng.gen_iter::<(usize, usize, i32)>().take(10) {

@@ -31,12 +31,12 @@
 pub mod ops;
 pub mod maybe_owned;
 pub use fenwick::PrefixPoint;
-pub use propogating::PointSegment;
-pub use range_query::SegmentPoint;
+pub use propagating::PointSegment;
+pub use segment_tree::SegmentPoint;
 
 mod fenwick;
-mod propogating;
-mod range_query;
+mod propagating;
+mod segment_tree;
 
 #[cfg(test)]
 extern crate rand;

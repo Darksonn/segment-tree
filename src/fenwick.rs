@@ -1,6 +1,5 @@
 use ops::{CommutativeOperation, Inverse};
 use maybe_owned::MaybeOwned;
-use std::marker::PhantomData;
 
 use std::default::Default;
 use std::hash::{Hash, Hasher};
@@ -22,7 +21,7 @@ use std::hash::{Hash, Hasher};
 ///
 ///let buf = vec![10, 5, 30, 40];
 ///
-///let mut pp: PrefixPoint<_, Add> = PrefixPoint::build(buf);
+///let mut pp = PrefixPoint::build(buf, Add);
 ///
 /// // If we query, we get the sum up until the specified value.
 ///assert_eq!(pp.query(0), 10);
@@ -83,7 +82,7 @@ use std::hash::{Hash, Hasher};
 ///
 ///let buf = vec![10, 5, 30, 40];
 ///
-///let mut pp: PrefixPoint<_, Mul> = PrefixPoint::build(buf);
+///let mut pp = PrefixPoint::build(buf, Mul);
 ///
 ///assert_eq!(pp.query(0), 10);
 ///assert_eq!(pp.query(1), 50);
@@ -92,7 +91,7 @@ use std::hash::{Hash, Hasher};
 ///```
 pub struct PrefixPoint<N, O> where O: CommutativeOperation<N> {
     buf: Vec<N>,
-    op: PhantomData<O>
+    op: O
 }
 
 /// Returns the least significant bit that is one.
@@ -103,33 +102,33 @@ fn lsb(i: usize) -> usize {
 
 /// Could also be done with slice_at_mut, but that's a giant pain
 #[inline(always)]
-unsafe fn combine_mut<N, O: CommutativeOperation<N>>(buf: &mut Vec<N>, i: usize, j: usize) {
+unsafe fn combine_mut<N, O: CommutativeOperation<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
     let ptr1 = &mut buf[i] as *mut N;
     let ptr2 = &buf[j] as *const N;
-    O::combine_mut(&mut *ptr1, &*ptr2);
+    op.combine_mut(&mut *ptr1, &*ptr2);
 }
 /// Could also be done with slice_at_mut, but that's a giant pain
 #[inline(always)]
-unsafe fn uncombine_mut<N, O: Inverse<N>>(buf: &mut Vec<N>, i: usize, j: usize) {
+unsafe fn uncombine_mut<N, O: Inverse<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
     let ptr1 = &mut buf[i] as *mut N;
     let ptr2 = &buf[j] as *const N;
-    O::uncombine(&mut *ptr1, &*ptr2);
+    op.uncombine(&mut *ptr1, &*ptr2);
 }
 
 impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
     /// Creates a `PrefixPoint` containing the given values.
     /// Uses `O(len)` time.
-    pub fn build(mut buf: Vec<N>) -> PrefixPoint<N, O> {
+    pub fn build(mut buf: Vec<N>, op: O) -> PrefixPoint<N, O> {
         let len = buf.len();
         for i in 0..len {
             let j = i + lsb(i+1);
             if j < len {
                 unsafe {
-                    combine_mut::<N, O>(&mut buf, j, i);
+                    combine_mut::<N, O>(&mut buf, j, i, &op);
                 }
             }
         }
-        PrefixPoint { buf: buf, op: PhantomData }
+        PrefixPoint { buf: buf, op: op }
     }
     /// Returns the number of values in this tree.
     /// Uses `O(1)` time.
@@ -143,7 +142,7 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
         let mut sum = self.buf[i].clone();
         i -= lsb(1+i) - 1;
         while i > 0 {
-            sum = O::combine_left(sum, &self.buf[i-1]);
+            sum = self.op.combine_left(sum, &self.buf[i-1]);
             i -= lsb(i);
         }
         sum
@@ -156,8 +155,8 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
         i -= lsb(1+i) - 1;
         while i > 0 {
             sum = MaybeOwned::Owned(match sum {
-                MaybeOwned::Borrowed(ref v) => O::combine(v, &self.buf[i-1]),
-                MaybeOwned::Owned(v) => O::combine_left(v, &self.buf[i-1]),
+                MaybeOwned::Borrowed(ref v) => self.op.combine(v, &self.buf[i-1]),
+                MaybeOwned::Owned(v) => self.op.combine_left(v, &self.buf[i-1]),
             });
             i -= lsb(i);
         }
@@ -169,7 +168,7 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
     pub fn modify(&mut self, mut i: usize, delta: N) {
         let len = self.len();
         while i < len {
-            O::combine_mut(&mut self.buf[i], &delta);
+            self.op.combine_mut(&mut self.buf[i], &delta);
             i += lsb(i+1);
         }
     }
@@ -205,7 +204,7 @@ impl<N, O: CommutativeOperation<N>> Extend<N> for PrefixPoint<N, O> {
             let j = i + lsb(i+1);
             if oldlen <= j && j < len {
                 unsafe {
-                    combine_mut::<N, O>(&mut self.buf, j, i);
+                    combine_mut::<N, O>(&mut self.buf, j, i, &self.op);
                 }
             }
         }
@@ -219,7 +218,7 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
         let mut sum = self.buf[i].clone();
         let z = 1 + i - lsb(i+1);
         while i != z {
-            O::uncombine(&mut sum, &self.buf[i-1]);
+            self.op.uncombine(&mut sum, &self.buf[i-1]);
             i -= lsb(i);
         }
         sum
@@ -228,7 +227,7 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
     /// Uses `O(log(i))` time.
     pub fn set(&mut self, i: usize, mut value: N) where N: Clone {
         let current = self.get(i);
-        O::uncombine(&mut value, &current);
+        self.op.uncombine(&mut value, &current);
         self.modify(i, value);
     }
     /// Compute the underlying array of values.
@@ -240,7 +239,7 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
             let j = i + lsb(i+1);
             if j < len {
                 unsafe {
-                    uncombine_mut::<N, O>(&mut buf, j, i);
+                    uncombine_mut::<N, O>(&mut buf, j, i, &self.op);
                 }
             }
         }
@@ -253,7 +252,7 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
             let j = i + lsb(i+1);
             if j < len {
                 unsafe {
-                    uncombine_mut::<N, O>(&mut buf, j, i);
+                    uncombine_mut::<N, O>(&mut buf, j, i, &self.op);
                 }
             }
         }
@@ -261,17 +260,17 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
     }
 }
 
-impl<N: Clone, O: CommutativeOperation<N>> Clone for PrefixPoint<N, O> {
+impl<N: Clone, O: CommutativeOperation<N> + Clone> Clone for PrefixPoint<N, O> {
     fn clone(&self) -> PrefixPoint<N, O> {
         PrefixPoint {
-            buf: self.buf.clone(), op: PhantomData
+            buf: self.buf.clone(), op: self.op.clone()
         }
     }
 }
-impl<N, O: CommutativeOperation<N>> Default for PrefixPoint<N, O> {
+impl<N, O: CommutativeOperation<N> + Default> Default for PrefixPoint<N, O> {
     #[inline]
     fn default() -> PrefixPoint<N, O> {
-        PrefixPoint { buf: Vec::new(), op: PhantomData }
+        PrefixPoint { buf: Vec::new(), op: Default::default() }
     }
 }
 impl<'a, N: 'a + Hash, O: CommutativeOperation<N>> Hash for PrefixPoint<N, O> {
@@ -309,11 +308,11 @@ mod tests {
         let mut rng = thread_rng();
         for n in 0..130 {
             let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
-            let fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.clone());
+            let fenwick = PrefixPoint::build(vec.clone(), Add);
             compute_prefix_sum(&mut vec);
             for i in 0..vec.len() {
                 assert_eq!(vec[i], fenwick.query(i));
-                assert_eq!(&vec[i], fenwick.query_noclone(i).as_ref());
+                assert_eq!(&vec[i], fenwick.query_noclone(i).borrow());
             }
         }
     }
@@ -322,7 +321,7 @@ mod tests {
         let mut rng = thread_rng();
         for n in 0..130 {
             let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
-            let mut fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.clone());
+            let mut fenwick = PrefixPoint::build(vec.clone(), Add);
             assert_eq!(fenwick.clone().unwrap(), vec);
             assert_eq!(fenwick.clone().unwrap_clone(), vec);
             compute_prefix_sum(&mut vec);
@@ -338,7 +337,7 @@ mod tests {
         for n in 0..130 {
             let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
             let diff: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
-            let mut fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.clone());
+            let mut fenwick = PrefixPoint::build(vec.clone(), Add);
             for i in 0..diff.len() {
                 let mut ps: Vec<Wrapping<i32>> = vec.clone();
                 compute_prefix_sum(&mut ps);
@@ -359,7 +358,7 @@ mod tests {
         for n in 0..130 {
             let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
             let diff: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
-            let mut fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.clone());
+            let mut fenwick = PrefixPoint::build(vec.clone(), Add);
             for i in 0..diff.len() {
                 let mut ps: Vec<Wrapping<i32>> = vec.clone();
                 compute_prefix_sum(&mut ps);
@@ -382,7 +381,7 @@ mod tests {
             let mut sum = vec.clone();
             compute_prefix_sum(&mut sum);
             for i in 0..sum.len() {
-                let mut fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.iter().take(i/2).map(|&i| i).collect());
+                let mut fenwick = PrefixPoint::build(vec.iter().take(i/2).map(|&i| i).collect(), Add);
                 fenwick.extend(vec.iter().skip(i/2).take(i - i/2).map(|&i| i));
                 for j in 0..i {
                     assert_eq!(sum[j], fenwick.query(j));
