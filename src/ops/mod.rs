@@ -59,7 +59,7 @@ pub trait Operation<N> {
 /// [`Operation`]: trait.Operation.html
 pub trait Commutative<N>: Operation<N> {}
 
-/// A trait that specifies that this type has an identity under this operation.
+/// A trait that specifies that this operation has an identity.
 ///
 /// An identity must satisfy `combine(a, id) = a` and `combine(id, a) = a`.
 pub trait Identity<N> {
@@ -67,7 +67,7 @@ pub trait Identity<N> {
     fn identity(&self) -> N;
 }
 
-/// A trait that specifies that this type allows uncombining.
+/// A trait that specifies that this operation is invertible.
 pub trait Invertible<N> {
     /// Returns some value such that `combine(uncombine(a, b), b) = a`.
     fn uncombine(&self, a: &mut N, b: &N);
