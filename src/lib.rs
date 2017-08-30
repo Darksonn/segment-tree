@@ -22,7 +22,7 @@
 //! `num` crate to [`ops`].
 //!
 //! [1]: https://en.wikipedia.org/wiki/Range_minimum_query
-//! [2]: ops/trait.CommutativeOperation.html
+//! [2]: ops/trait.Commutative.html
 //! [`SegmentPoint`]: struct.SegmentPoint.html
 //! [`PointSegment`]: struct.PointSegment.html
 //! [`PrefixPoint`]: struct.PrefixPoint.html

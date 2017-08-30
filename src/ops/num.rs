@@ -1,7 +1,7 @@
 //! This module requires the `with-num` feature and supplies implementations for various types from
 //! the `num` crate.
 
-use ops::{Operation, CommutativeOperation, Identity, Inverse};
+use ops::{Operation, Commutative, Identity, Invertible};
 use ops::{Add, Mul};
 use num::{BigInt, BigUint, Complex, Zero, One};
 use num::bigint::Sign;
@@ -50,13 +50,13 @@ macro_rules! impl_big {
                 b * a
             }
         }
-        impl Inverse<$t> for Add {
+        impl Invertible<$t> for Add {
             fn uncombine(&self, a: &mut $t, b: &$t) {
                 let aa = mem::replace(a, self.identity());
                 *a = aa - b;
             }
         }
-        impl Inverse<$t> for Mul {
+        impl Invertible<$t> for Mul {
             fn uncombine(&self, a: &mut $t, b: &$t) {
                 let aa = mem::replace(a, self.identity());
                 *a = aa / b;
@@ -87,12 +87,12 @@ macro_rules! impl_iden_mul {
 impl_big!(BigInt);
 impl_iden_add!(BigInt => BigInt::from_slice(Sign::NoSign, &[]));
 impl_iden_mul!(BigInt => BigInt::from_slice(Sign::Plus, &[1]));
-impl CommutativeOperation<BigInt> for Add {}
+impl Commutative<BigInt> for Add {}
 
 impl_big!(BigUint);
 impl_iden_add!(BigUint => BigUint::from_slice(&[]));
 impl_iden_mul!(BigUint => BigUint::from_slice(&[1]));
-impl CommutativeOperation<BigUint> for Add {}
+impl Commutative<BigUint> for Add {}
 
 impl<T> Operation<Complex<T>> for Add where Add: Operation<T> {
     fn combine(&self, a: &Complex<T>, b: &Complex<T>) -> Complex<T> {
@@ -128,13 +128,13 @@ impl<T> Operation<Complex<T>> for Add where Add: Operation<T> {
         }
     }
 }
-impl<T> CommutativeOperation<Complex<T>> for Add where Add: CommutativeOperation<T> {}
+impl<T> Commutative<Complex<T>> for Add where Add: Commutative<T> {}
 impl<T> Identity<Complex<T>> for Add where Add: Identity<T> {
     fn identity(&self) -> Complex<T> {
         Complex { re: self.identity(), im: self.identity() }
     }
 }
-impl<T> Inverse<Complex<T>> for Add where Add: Inverse<T> {
+impl<T> Invertible<Complex<T>> for Add where Add: Invertible<T> {
     fn uncombine(&self, a: &mut Complex<T>, b: &Complex<T>) {
         self.uncombine(&mut a.re, &b.re);
         self.uncombine(&mut a.im, &b.im);
@@ -162,13 +162,13 @@ macro_rules! impl_ratio_op {
                 b $add a
             }
         }
-        impl<T: Clone+Integer> CommutativeOperation<Ratio<T>> for $op {}
+        impl<T: Clone+Integer> Commutative<Ratio<T>> for $op {}
         impl<T: Clone+Integer> Identity<Ratio<T>> for $op {
             fn identity(&self) -> Ratio<T> {
                 $iden
             }
         }
-        impl<T: Clone+Integer> Inverse<Ratio<T>> for $op {
+        impl<T: Clone+Integer> Invertible<Ratio<T>> for $op {
             fn uncombine(&self, a: &mut Ratio<T>, b: &Ratio<T>) {
                 let aa = mem::replace(a, self.identity());
                 *a = aa $sub b;

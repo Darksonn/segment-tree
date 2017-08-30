@@ -1,7 +1,7 @@
 use std::mem;
 use std::default::Default;
 
-use ops::{CommutativeOperation, Identity};
+use ops::{Commutative, Identity};
 
 /// This data structure allows range modification and single element queries.
 ///
@@ -38,13 +38,13 @@ use ops::{CommutativeOperation, Identity};
 ///assert_eq!(tree.query(10_000), 1);
 ///assert_eq!(tree.query(600_000), 0);
 ///```
-pub struct PointSegment<N, O> where O: CommutativeOperation<N> + Identity<N> {
+pub struct PointSegment<N, O> where O: Commutative<N> + Identity<N> {
     buf: Vec<N>,
     n: usize,
     op: O
 }
 
-impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
+impl<N, O: Commutative<N> + Identity<N>> PointSegment<N, O> {
     /// Builds a tree using the given buffer. If the given buffer is less than half full, this
     /// function allocates.
     /// Uses `O(len)` time.
@@ -120,7 +120,7 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> PointSegment<N, O> {
     }
 }
 
-impl<N: Clone, O: Identity<N> + CommutativeOperation<N> + Clone> Clone for PointSegment<N, O> {
+impl<N: Clone, O: Identity<N> + Commutative<N> + Clone> Clone for PointSegment<N, O> {
     #[inline]
     fn clone(&self) -> PointSegment<N, O> {
         PointSegment {
@@ -128,7 +128,7 @@ impl<N: Clone, O: Identity<N> + CommutativeOperation<N> + Clone> Clone for Point
         }
     }
 }
-impl<N, O: Identity<N> + CommutativeOperation<N> + Default> Default for PointSegment<N, O> {
+impl<N, O: Identity<N> + Commutative<N> + Default> Default for PointSegment<N, O> {
     #[inline]
     fn default() -> PointSegment<N, O> {
         PointSegment { buf: Vec::new(), n: 0, op: Default::default() }

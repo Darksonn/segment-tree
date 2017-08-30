@@ -1,11 +1,11 @@
 //! Module of operations that can be performed in a segment tree.
 //!
 //! A segment tree needs some operation, and this module contains the main [`Operation`] trait,
-//! together with the marker trait [`CommutativeOperation`]. This module also contains
+//! together with the marker trait [`Commutative`]. This module also contains
 //! implementations for simple operations.
 //!
 //! [`Operation`]: trait.Operation.html
-//! [`CommutativeOperation`]: trait.CommutativeOperation.html
+//! [`Commutative`]: trait.Commutative.html
 
 use std::cmp;
 use std::num::Wrapping;
@@ -57,7 +57,7 @@ pub trait Operation<N> {
 /// A marker trait that specifies that an [`Operation`] is commutative, that is: `combine(a, b) = combine(b, a)`.
 ///
 /// [`Operation`]: trait.Operation.html
-pub trait CommutativeOperation<N>: Operation<N> {}
+pub trait Commutative<N>: Operation<N> {}
 
 /// A trait that specifies that this type has an identity under this operation.
 ///
@@ -68,7 +68,7 @@ pub trait Identity<N> {
 }
 
 /// A trait that specifies that this type allows uncombining.
-pub trait Inverse<N> {
+pub trait Invertible<N> {
     /// Returns some value such that `combine(uncombine(a, b), b) = a`.
     fn uncombine(&self, a: &mut N, b: &N);
 }
@@ -96,13 +96,13 @@ macro_rules! impl_primitive_op {
                 *a $add *b
             }
         }
-        impl CommutativeOperation<$t> for $op {}
+        impl Commutative<$t> for $op {}
         impl Identity<$t> for $op {
             fn identity(&self) -> $t {
                 ($iden) as $t
             }
         }
-        impl Inverse<$t> for $op {
+        impl Invertible<$t> for $op {
             fn uncombine(&self, a: &mut $t, b: &$t) {
                 *a = *a $sub *b;
             }
@@ -116,13 +116,13 @@ macro_rules! impl_primitive_op_wrapping {
                 *a $add *b
             }
         }
-        impl CommutativeOperation<Wrapping<$t>> for $op {}
+        impl Commutative<Wrapping<$t>> for $op {}
         impl Identity<Wrapping<$t>> for $op {
             fn identity(&self) -> Wrapping<$t> {
                 Wrapping(($iden) as $t)
             }
         }
-        impl Inverse<Wrapping<$t>> for $op {
+        impl Invertible<Wrapping<$t>> for $op {
             fn uncombine(&self, a: &mut Wrapping<$t>, b: &Wrapping<$t>) {
                 *a = *a $sub *b;
             }
@@ -173,7 +173,7 @@ macro_rules! impl_cmp_primitive_aux {
                 cmp::$cmp(*a, *b)
             }
         }
-        impl CommutativeOperation<$t> for $cmpt {}
+        impl Commutative<$t> for $cmpt {}
         impl Identity<$t> for $cmpt {
             fn identity(&self) -> $t {
                 $iden
@@ -367,14 +367,14 @@ impl<TA, TB, A: Operation<TA>, B: Operation<TB>> Operation<(TA, TB)> for Pair<A,
         (self.a.combine_both(a.0, b.0), self.b.combine_both(a.1, b.1))
     }
 }
-impl<TA, TB, A: Inverse<TA>, B: Inverse<TB>> Inverse<(TA, TB)> for Pair<A, B> {
+impl<TA, TB, A: Invertible<TA>, B: Invertible<TB>> Invertible<(TA, TB)> for Pair<A, B> {
     #[inline(always)]
     fn uncombine(&self, a: &mut (TA, TB), b: &(TA, TB)) {
         self.a.uncombine(&mut a.0, &b.0);
         self.b.uncombine(&mut a.1, &b.1);
     }
 }
-impl<TA, TB, A: CommutativeOperation<TA>, B: CommutativeOperation<TB>> CommutativeOperation<(TA, TB)> for Pair<A, B> {}
+impl<TA, TB, A: Commutative<TA>, B: Commutative<TB>> Commutative<(TA, TB)> for Pair<A, B> {}
 impl<TA, TB, A: Identity<TA>, B: Identity<TB>> Identity<(TA,TB)> for Pair<A, B> {
     fn identity(&self) -> (TA, TB) {
         (self.a.identity(), self.b.identity())
@@ -459,7 +459,7 @@ impl<TA: Clone, A: Operation<TA>> Operation<Option<TA>> for WithIdentity<A> {
         }
     }
 }
-impl<TA: Clone, A: CommutativeOperation<TA>> CommutativeOperation<Option<TA>> for WithIdentity<A> {}
+impl<TA: Clone, A: Commutative<TA>> Commutative<Option<TA>> for WithIdentity<A> {}
 impl<TA> Identity<Option<TA>> for WithIdentity<TA> {
     #[inline]
     fn identity(&self) -> Option<TA> { None }

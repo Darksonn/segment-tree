@@ -1,4 +1,4 @@
-use ops::{CommutativeOperation, Inverse};
+use ops::{Commutative, Invertible};
 use maybe_owned::MaybeOwned;
 
 use std::default::Default;
@@ -89,7 +89,7 @@ use std::hash::{Hash, Hasher};
 ///assert_eq!(pp.query(2), 1500);
 ///assert_eq!(pp.query(3), 60000);
 ///```
-pub struct PrefixPoint<N, O> where O: CommutativeOperation<N> {
+pub struct PrefixPoint<N, O> where O: Commutative<N> {
     buf: Vec<N>,
     op: O
 }
@@ -102,20 +102,20 @@ fn lsb(i: usize) -> usize {
 
 /// Could also be done with slice_at_mut, but that's a giant pain
 #[inline(always)]
-unsafe fn combine_mut<N, O: CommutativeOperation<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
+unsafe fn combine_mut<N, O: Commutative<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
     let ptr1 = &mut buf[i] as *mut N;
     let ptr2 = &buf[j] as *const N;
     op.combine_mut(&mut *ptr1, &*ptr2);
 }
 /// Could also be done with slice_at_mut, but that's a giant pain
 #[inline(always)]
-unsafe fn uncombine_mut<N, O: Inverse<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
+unsafe fn uncombine_mut<N, O: Invertible<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
     let ptr1 = &mut buf[i] as *mut N;
     let ptr2 = &buf[j] as *const N;
     op.uncombine(&mut *ptr1, &*ptr2);
 }
 
-impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
+impl<N, O: Commutative<N>> PrefixPoint<N, O> {
     /// Creates a `PrefixPoint` containing the given values.
     /// Uses `O(len)` time.
     pub fn build(mut buf: Vec<N>, op: O) -> PrefixPoint<N, O> {
@@ -193,7 +193,7 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
         }
     }
 }
-impl<N, O: CommutativeOperation<N>> Extend<N> for PrefixPoint<N, O> {
+impl<N, O: Commutative<N>> Extend<N> for PrefixPoint<N, O> {
     /// Adds the given values to the `PrefixPoint`, increasing its size.
     /// Uses `O(len)` time.
     fn extend<I: IntoIterator<Item=N>>(&mut self, values: I) {
@@ -210,7 +210,7 @@ impl<N, O: CommutativeOperation<N>> Extend<N> for PrefixPoint<N, O> {
         }
     }
 }
-impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
+impl<N, O: Commutative<N> + Invertible<N>> PrefixPoint<N, O> {
     /// Returns the value at `i`.
     /// Uses `O(log(i))` time.
     /// Store your own copy of the array if you want constant time.
@@ -260,20 +260,20 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
     }
 }
 
-impl<N: Clone, O: CommutativeOperation<N> + Clone> Clone for PrefixPoint<N, O> {
+impl<N: Clone, O: Commutative<N> + Clone> Clone for PrefixPoint<N, O> {
     fn clone(&self) -> PrefixPoint<N, O> {
         PrefixPoint {
             buf: self.buf.clone(), op: self.op.clone()
         }
     }
 }
-impl<N, O: CommutativeOperation<N> + Default> Default for PrefixPoint<N, O> {
+impl<N, O: Commutative<N> + Default> Default for PrefixPoint<N, O> {
     #[inline]
     fn default() -> PrefixPoint<N, O> {
         PrefixPoint { buf: Vec::new(), op: Default::default() }
     }
 }
-impl<'a, N: 'a + Hash, O: CommutativeOperation<N>> Hash for PrefixPoint<N, O> {
+impl<'a, N: 'a + Hash, O: Commutative<N>> Hash for PrefixPoint<N, O> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.buf.hash(state);

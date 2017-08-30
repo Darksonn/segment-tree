@@ -3,7 +3,7 @@ use std::cmp::{PartialEq, Eq};
 use std::default::Default;
 use std::hash::{Hash, Hasher};
 
-use ops::{Operation, CommutativeOperation, Identity};
+use ops::{Operation, Commutative, Identity};
 use maybe_owned::MaybeOwned;
 
 /// This data structure allows range queries and single element modification.
@@ -274,7 +274,7 @@ impl<N, O: Operation<N>> SegmentPoint<N, O> {
         }
     }
 }
-impl<N, O: CommutativeOperation<N>> SegmentPoint<N, O> {
+impl<N, O: Commutative<N>> SegmentPoint<N, O> {
     /// Combine the value at `p` with `delta`.
     /// Uses `O(log(len))` time.
     #[inline(always)]
@@ -282,7 +282,7 @@ impl<N, O: CommutativeOperation<N>> SegmentPoint<N, O> {
         self.compose_right(p, delta);
     }
 }
-impl<N, O: CommutativeOperation<N> + Identity<N>> SegmentPoint<N, O> {
+impl<N, O: Commutative<N> + Identity<N>> SegmentPoint<N, O> {
     /// Computes `a[l] * a[l+1] * ... * a[r-1]`.
     /// Uses `O(log(len))` time.
     ///
@@ -292,7 +292,7 @@ impl<N, O: CommutativeOperation<N> + Identity<N>> SegmentPoint<N, O> {
     ///
     /// [`query`]: struct.SegmentPoint.html#method.query
     /// [`query_noclone`]: struct.SegmentPoint.html#method.query_noclone
-    /// [1]: ops/trait.CommutativeOperation.html
+    /// [1]: ops/trait.Commutative.html
     pub fn query_commut(&self, mut l: usize, mut r: usize) -> N {
         let mut res = self.op.identity();
         l += self.n; r += self.n;
