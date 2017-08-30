@@ -8,7 +8,7 @@ use std::hash::{Hash, Hasher};
 ///
 /// This tree allocates `n * sizeof(N)` bytes of memory, and can be resized.
 ///
-/// This data structure is implemented using a fenwick tree, which is also known as a binary
+/// This data structure is implemented using a Fenwick tree, which is also known as a binary
 /// indexed tree.
 ///
 ///# Examples
