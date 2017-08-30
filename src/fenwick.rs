@@ -46,7 +46,7 @@ use std::hash::{Hash, Hasher};
 /// // Divide with two to undo.
 ///pp.map(|v| *v /= 2);
 /// // Add some more values.
-///pp.append(vec![0, 10]);
+///pp.extend(vec![0, 10].into_iter());
 ///assert_eq!(pp.query(0), 10);
 ///assert_eq!(pp.query(1), 20);
 ///assert_eq!(pp.query(2), 50);
@@ -163,6 +163,11 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
     pub fn truncate(&mut self, size: usize) {
         self.buf.truncate(size);
     }
+    /// Calls `shrink_to_fit` on the interval vector.
+    #[inline(always)]
+    pub fn shrink_to_fit(&mut self) {
+        self.buf.shrink_to_fit();
+    }
     /// Replace every value in the type with `f(value)`.
     /// This function assumes that `f(a) * f(b) = f(a * b)`.
     /// Applies the function `len` times.
@@ -171,12 +176,6 @@ impl<N, O: CommutativeOperation<N>> PrefixPoint<N, O> {
         for val in &mut self.buf {
             f(val);
         }
-    }
-    /// Adds the given values to the `PrefixPoint`, increasing its size.
-    /// Uses `O(len)` time.
-    #[inline]
-    pub fn append(&mut self, mut values: Vec<N>) {
-        self.extend(values.drain(..))
     }
 }
 impl<N, O: CommutativeOperation<N>> Extend<N> for PrefixPoint<N, O> {
@@ -214,6 +213,19 @@ impl<N, O: CommutativeOperation<N> + Inverse<N>> PrefixPoint<N, O> {
     pub fn unwrap(self) -> Vec<N> {
         let mut buf = self.buf;
         let len = buf.len();
+        for i in (0..len).rev() {
+            let j = i + lsb(i+1);
+            if j < len {
+                unsafe {
+                    uncombine_mut::<N, O>(&mut buf, j, i);
+                }
+            }
+        }
+        buf
+    }
+    pub fn unwrap_clone(&self) -> Vec<N> where N: Clone {
+        let len = self.buf.len();
+        let mut buf = self.buf.clone();
         for i in (0..len).rev() {
             let j = i + lsb(i+1);
             if j < len {
@@ -288,6 +300,7 @@ mod tests {
             let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
             let mut fenwick: PrefixPoint<_, Add> = PrefixPoint::build(vec.clone());
             assert_eq!(fenwick.clone().unwrap(), vec);
+            assert_eq!(fenwick.clone().unwrap_clone(), vec);
             compute_prefix_sum(&mut vec);
             fenwick.map(|n| *n = Wrapping(12) * *n);
             for i in 0..vec.len() {
@@ -306,6 +319,7 @@ mod tests {
                 let mut ps: Vec<Wrapping<i32>> = vec.clone();
                 compute_prefix_sum(&mut ps);
                 assert_eq!(fenwick.clone().unwrap(), vec);
+                assert_eq!(fenwick.clone().unwrap_clone(), vec);
                 for j in 0..vec.len() {
                     assert_eq!(ps[j], fenwick.query(j));
                     assert_eq!(vec[j], fenwick.get(j));
