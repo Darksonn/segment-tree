@@ -18,6 +18,8 @@
 //! size of the array can be changed. This data structure is also known as a
 //! [fenwick tree][3].
 //!
+//! The segment tree in this crate is inspired by [this blog post][4].
+//!
 //! The similar crate [`prefix-sum`] might also be of interest.
 //!
 //! This crate has the optional feature [`num-bigint`], which implements the operations in
@@ -26,6 +28,7 @@
 //! [1]: https://en.wikipedia.org/wiki/Range_minimum_query
 //! [2]: ops/trait.Commutative.html
 //! [3]: https://en.wikipedia.org/wiki/Fenwick_tree
+//! [4]: https://codeforces.com/blog/entry/18051
 //! [`SegmentPoint`]: struct.SegmentPoint.html
 //! [`PointSegment`]: struct.PointSegment.html
 //! [`PrefixPoint`]: struct.PrefixPoint.html
