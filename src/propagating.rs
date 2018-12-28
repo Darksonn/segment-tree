@@ -45,8 +45,8 @@ pub struct PointSegment<N, O> where O: Commutative<N> + Identity<N> {
 }
 
 impl<N, O: Commutative<N> + Identity<N>> PointSegment<N, O> {
-    /// Builds a tree using the given buffer. If the given buffer is less than half full, this
-    /// function allocates.
+    /// Builds a tree using the given buffer. If the given buffer is less than half full,
+    /// this function allocates.
     /// Uses `O(len)` time.
     pub fn build(mut buf: Vec<N>, op: O) -> PointSegment<N, O> {
         let n = buf.len();

@@ -7,6 +7,7 @@ use std::cmp;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::default::Default;
 use std::hash::{Hash, Hasher};
+use std::borrow::Cow;
 
 /// A variant of [`Cow`] that doesn't require [`Clone`].
 ///
@@ -20,13 +21,27 @@ pub enum MaybeOwned<'a, T: 'a> {
 impl<'a, T: 'a> MaybeOwned<'a, T> {
     /// Get a reference to the contained value.
     #[inline]
-    pub fn borrow<'b>(&'b self) -> &'b T where 'b: 'a {
+    pub fn borrow(&self) -> &T {
         match *self {
             MaybeOwned::Borrowed(v) => v,
             MaybeOwned::Owned(ref v) => &v
         }
     }
+    /// Turn this type into a [`Cow`].
+    ///
+    /// Requires [`Clone`].
+    ///
+    /// [`Cow`]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
+    /// [`Clone`]: https://doc.rust-lang.org/std/clone/trait.Clone.html
+    #[inline]
+    pub fn into_cow(self) -> Cow<'a, T> where T: Clone {
+        match self {
+            MaybeOwned::Borrowed(v) => Cow::Borrowed(v),
+            MaybeOwned::Owned(v) => Cow::Owned(v),
+        }
+    }
 }
+
 impl<'a, T: 'a + Clone> MaybeOwned<'a, T> {
     /// Get the value, cloning if necessary.
     #[inline]
