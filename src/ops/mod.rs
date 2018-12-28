@@ -7,10 +7,9 @@
 //! [`Operation`]: trait.Operation.html
 //! [`Commutative`]: trait.Commutative.html
 
-use std::cmp;
 use std::num::Wrapping;
 
-#[cfg(feature = "with-num")]
+#[cfg(feature = "num-bigint")]
 mod num;
 
 /// A trait that specifies which associative operator to use in a segment tree.
@@ -81,7 +80,8 @@ pub trait Identity<N> {
 
 /// A trait for invertible operations.
 pub trait Invertible<N> {
-    /// A method such that the following code will leave `a` in the same state as it started.
+    /// A method such that the following code will leave `a` in the same state as it
+    /// started.
     ///
     ///```rust
     ///# use segment_tree::ops::{Add, Operation, Invertible};
@@ -405,7 +405,7 @@ impl_identity!(Xor, bool, false, "Returns `false`.");
 #[cfg(test)]
 mod tests {
     use std::{f32, i32, u32};
-    use ops::*;
+    use crate::ops::*;
     #[test]
     fn ops_nan() {
         assert_eq!(MaxIgnoreNaN.combine_both(0.0, 1.0), 1.0);

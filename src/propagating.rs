@@ -1,43 +1,43 @@
 use std::mem;
 use std::default::Default;
 
-use ops::{Commutative, Identity};
+use crate::ops::{Commutative, Identity};
 
 /// This data structure allows range modification and single element queries.
 ///
 /// This tree allocates `2n * sizeof(N)` bytes of memory.
 ///
-/// This tree is implemented using a binary tree, where each node contains the changes that need
-/// to be propogated to its children.
+/// This tree is implemented using a binary tree, where each node contains the changes
+/// that need to be propogated to its children.
 ///
-///# Examples
+/// # Examples
 ///
 /// Quickly add something to every value in some interval.
 ///
-///```rust
-///use segment_tree::PointSegment;
-///use segment_tree::ops::Add;
+/// ```rust
+/// use segment_tree::PointSegment;
+/// use segment_tree::ops::Add;
 ///
-///use std::iter::repeat;
+/// use std::iter::repeat;
 ///
 /// // make a giant tree of zeroes
-///let mut tree = PointSegment::build(repeat(0).take(1_000_000).collect(), Add);
+/// let mut tree = PointSegment::build(repeat(0).take(1_000_000).collect(), Add);
 ///
-/// // add one to every value between 200 and 1000
-///tree.modify(200, 500_000, 1);
-///assert_eq!(tree.query(100), 0);
-///assert_eq!(tree.query(200), 1);
-///assert_eq!(tree.query(500), 1);
-///assert_eq!(tree.query(499_999), 1);
-///assert_eq!(tree.query(500_000), 0);
+/// // add one to every value between 200 and 500000
+/// tree.modify(200, 500_000, 1);
+/// assert_eq!(tree.query(100), 0);
+/// assert_eq!(tree.query(200), 1);
+/// assert_eq!(tree.query(500), 1);
+/// assert_eq!(tree.query(499_999), 1);
+/// assert_eq!(tree.query(500_000), 0);
 ///
 /// // add five to every value between 0 and 1000
-///tree.modify(0, 1000, 5);
-///assert_eq!(tree.query(10), 5);
-///assert_eq!(tree.query(500), 6);
-///assert_eq!(tree.query(10_000), 1);
-///assert_eq!(tree.query(600_000), 0);
-///```
+/// tree.modify(0, 1000, 5);
+/// assert_eq!(tree.query(10), 5);
+/// assert_eq!(tree.query(500), 6);
+/// assert_eq!(tree.query(10_000), 1);
+/// assert_eq!(tree.query(600_000), 0);
+/// ```
 pub struct PointSegment<N, O> where O: Commutative<N> + Identity<N> {
     buf: Vec<N>,
     n: usize,
@@ -101,8 +101,9 @@ impl<N, O: Commutative<N> + Identity<N>> PointSegment<N, O> {
             l >>= 1; r >>= 1;
         }
     }
-    /// Propogate all changes to the leaves in the tree and return a mutable slice containing the
-    /// leaves.
+    /// Propogate all changes to the leaves in the tree and return a mutable slice
+    /// containing the leaves.
+    ///
     /// Uses `O(len)` time.
     pub fn propogate(&mut self) -> &mut [N] {
         for i in 1..self.n {
@@ -137,25 +138,27 @@ impl<N, O: Identity<N> + Commutative<N> + Default> Default for PointSegment<N, O
 
 #[cfg(test)]
 mod tests {
-    use propagating::*;
-    use ops::*;
-    use rand::{Rng, thread_rng};
+    use crate::propagating::*;
+    use crate::ops::*;
+    use rand::prelude::*;
+    use rand::distributions::Standard;
     use std::num::Wrapping;
-
-    type Num = Wrapping<i32>;
 
     #[test]
     fn test() {
         let mut rng = thread_rng();
         for i in 1..130 {
-            let mut buf: Vec<Num> = rng.gen_iter::<i32>().map(|i| Wrapping(i)).take(i).collect();
+            let mut buf: Vec<Wrapping<i32>> = rng.sample_iter(&Standard)
+                .map(|n| Wrapping(n)).take(i).collect();
             let mut tree = match i%3 {
                 0 => PointSegment::build_slice(&buf[..], Add),
                 1 => PointSegment::build_iter(buf.iter().cloned(), Add),
                 2 => PointSegment::build(buf.clone(), Add),
                 _ => unreachable!()
             };
-            for (n, m, v) in rng.gen_iter::<(usize, usize, i32)>().take(10) {
+            let tests: Vec<(usize, usize, i32)> = rng.sample_iter(&Standard)
+                .take(10).collect();
+            for (n, m, v) in tests {
                 let n = n % i;
                 let m = m % i;
                 if n > m { continue; }

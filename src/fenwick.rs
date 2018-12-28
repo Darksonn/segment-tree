@@ -1,5 +1,5 @@
-use ops::{Commutative, Invertible};
-use maybe_owned::MaybeOwned;
+use crate::ops::{Commutative, Invertible};
+use crate::maybe_owned::MaybeOwned;
 
 use std::default::Default;
 use std::hash::{Hash, Hasher};
@@ -8,87 +8,92 @@ use std::hash::{Hash, Hasher};
 ///
 /// This tree allocates `n * sizeof(N)` bytes of memory, and can be resized.
 ///
-/// This data structure is implemented using a Fenwick tree, which is also known as a binary
-/// indexed tree.
+/// This data structure is implemented using a [Fenwick tree][1], which is also known as a
+/// binary indexed tree.
 ///
-///# Examples
+/// The similar crate [`prefix-sum`] might also be of interest.
+///
+/// # Examples
 ///
 /// Showcase of functionality:
 ///
-///```rust
-///use segment_tree::ops::Add;
-///use segment_tree::PrefixPoint;
+/// ```rust
+/// use segment_tree::ops::Add;
+/// use segment_tree::PrefixPoint;
 ///
-///let buf = vec![10, 5, 30, 40];
+/// let buf = vec![10, 5, 30, 40];
 ///
-///let mut pp = PrefixPoint::build(buf, Add);
+/// let mut pp = PrefixPoint::build(buf, Add);
 ///
 /// // If we query, we get the sum up until the specified value.
-///assert_eq!(pp.query(0), 10);
-///assert_eq!(pp.query(1), 15);
-///assert_eq!(pp.query(2), 45);
-///assert_eq!(pp.query(3), 85);
+/// assert_eq!(pp.query(0), 10);
+/// assert_eq!(pp.query(1), 15);
+/// assert_eq!(pp.query(2), 45);
+/// assert_eq!(pp.query(3), 85);
 ///
 /// // Add five to the second value.
-///pp.modify(1, 5);
-///assert_eq!(pp.query(0), 10);
-///assert_eq!(pp.query(1), 20);
-///assert_eq!(pp.query(2), 50);
-///assert_eq!(pp.query(3), 90);
+/// pp.modify(1, 5);
+/// assert_eq!(pp.query(0), 10);
+/// assert_eq!(pp.query(1), 20);
+/// assert_eq!(pp.query(2), 50);
+/// assert_eq!(pp.query(3), 90);
 ///
 /// // Multiply every value with 2.
-///pp.map(|v| *v *= 2);
-///assert_eq!(pp.query(0), 20);
-///assert_eq!(pp.query(1), 40);
-///assert_eq!(pp.query(2), 100);
-///assert_eq!(pp.query(3), 180);
+/// pp.map(|v| *v *= 2);
+/// assert_eq!(pp.query(0), 20);
+/// assert_eq!(pp.query(1), 40);
+/// assert_eq!(pp.query(2), 100);
+/// assert_eq!(pp.query(3), 180);
 ///
 /// // Divide with two to undo.
-///pp.map(|v| *v /= 2);
+/// pp.map(|v| *v /= 2);
 /// // Add some more values.
-///pp.extend(vec![0, 10].into_iter());
-///assert_eq!(pp.query(0), 10);
-///assert_eq!(pp.query(1), 20);
-///assert_eq!(pp.query(2), 50);
-///assert_eq!(pp.query(3), 90);
-///assert_eq!(pp.query(4), 90);
-///assert_eq!(pp.query(5), 100);
+/// pp.extend(vec![0, 10].into_iter());
+/// assert_eq!(pp.query(0), 10);
+/// assert_eq!(pp.query(1), 20);
+/// assert_eq!(pp.query(2), 50);
+/// assert_eq!(pp.query(3), 90);
+/// assert_eq!(pp.query(4), 90);
+/// assert_eq!(pp.query(5), 100);
 ///
-/// // Get the values.
-///assert_eq!(pp.get(0), 10);
-///assert_eq!(pp.get(1), 10);
-///assert_eq!(pp.get(2), 30);
-///assert_eq!(pp.get(3), 40);
-///assert_eq!(pp.get(4), 0);
-///assert_eq!(pp.get(5), 10);
+/// // Get the underlying values.
+/// assert_eq!(pp.get(0), 10);
+/// assert_eq!(pp.get(1), 10);
+/// assert_eq!(pp.get(2), 30);
+/// assert_eq!(pp.get(3), 40);
+/// assert_eq!(pp.get(4), 0);
+/// assert_eq!(pp.get(5), 10);
 ///
 /// // Remove the last value
-///pp.truncate(5);
-///assert_eq!(pp.get(0), 10);
-///assert_eq!(pp.get(1), 10);
-///assert_eq!(pp.get(2), 30);
-///assert_eq!(pp.get(3), 40);
-///assert_eq!(pp.get(4), 0);
+/// pp.truncate(5);
+/// assert_eq!(pp.get(0), 10);
+/// assert_eq!(pp.get(1), 10);
+/// assert_eq!(pp.get(2), 30);
+/// assert_eq!(pp.get(3), 40);
+/// assert_eq!(pp.get(4), 0);
 ///
 /// // Get back the original values.
-///assert_eq!(pp.unwrap(), vec![10, 10, 30, 40, 0]);
-///```
+/// assert_eq!(pp.unwrap(), vec![10, 10, 30, 40, 0]);
+/// ```
 ///
 /// You can also use other operators:
 ///
-///```rust
-///use segment_tree::ops::Mul;
-///use segment_tree::PrefixPoint;
+/// ```rust
+/// use segment_tree::ops::Mul;
+/// use segment_tree::PrefixPoint;
 ///
-///let buf = vec![10, 5, 30, 40];
+/// let buf = vec![10, 5, 30, 40];
 ///
-///let mut pp = PrefixPoint::build(buf, Mul);
+/// let mut pp = PrefixPoint::build(buf, Mul);
 ///
-///assert_eq!(pp.query(0), 10);
-///assert_eq!(pp.query(1), 50);
-///assert_eq!(pp.query(2), 1500);
-///assert_eq!(pp.query(3), 60000);
-///```
+/// assert_eq!(pp.query(0), 10);
+/// assert_eq!(pp.query(1), 50);
+/// assert_eq!(pp.query(2), 1500);
+/// assert_eq!(pp.query(3), 60000);
+/// ```
+///
+/// [1]: https://en.wikipedia.org/wiki/Fenwick_tree
+/// [`prefix-sum`]: https://crates.io/crates/prefix-sum
 pub struct PrefixPoint<N, O> where O: Commutative<N> {
     buf: Vec<N>,
     op: O
@@ -103,6 +108,7 @@ fn lsb(i: usize) -> usize {
 /// Could also be done with slice_at_mut, but that's a giant pain
 #[inline(always)]
 unsafe fn combine_mut<N, O: Commutative<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
+    debug_assert!(i != j);
     let ptr1 = &mut buf[i] as *mut N;
     let ptr2 = &buf[j] as *const N;
     op.combine_mut(&mut *ptr1, &*ptr2);
@@ -110,6 +116,7 @@ unsafe fn combine_mut<N, O: Commutative<N>>(buf: &mut Vec<N>, i: usize, j: usize
 /// Could also be done with slice_at_mut, but that's a giant pain
 #[inline(always)]
 unsafe fn uncombine_mut<N, O: Invertible<N>>(buf: &mut Vec<N>, i: usize, j: usize, op: &O) {
+    debug_assert!(i != j);
     let ptr1 = &mut buf[i] as *mut N;
     let ptr2 = &buf[j] as *const N;
     op.uncombine(&mut *ptr1, &*ptr2);
@@ -172,8 +179,8 @@ impl<N, O: Commutative<N>> PrefixPoint<N, O> {
             i += lsb(i+1);
         }
     }
-    /// Truncates the `PrefixPoint` to the given size.  If `size >= len`, this method does nothing.
-    /// Uses `O(1)` time.
+    /// Truncates the `PrefixPoint` to the given size.  If `size >= len`, this method does
+    /// nothing.  Uses `O(1)` time.
     #[inline(always)]
     pub fn truncate(&mut self, size: usize) {
         self.buf.truncate(size);
@@ -184,8 +191,9 @@ impl<N, O: Commutative<N>> PrefixPoint<N, O> {
         self.buf.shrink_to_fit();
     }
     /// Replace every value in the type with `f(value)`.
-    /// This function assumes that `f(a) * f(b) = f(a * b)`.
-    /// Applies the function `len` times.
+    /// This function assumes that `combine(f(a), f(b)) = f(combine(a, b))`.
+    ///
+    /// The function is applied `len` times.
     #[inline]
     pub fn map<F: FnMut(&mut N)>(&mut self, mut f: F) {
         for val in &mut self.buf {
@@ -245,6 +253,8 @@ impl<N, O: Commutative<N> + Invertible<N>> PrefixPoint<N, O> {
         }
         buf
     }
+    /// Compute the underlying array of values.
+    /// Uses `O(len)` time.
     pub fn unwrap_clone(&self) -> Vec<N> where N: Clone {
         let len = self.buf.len();
         let mut buf = self.buf.clone();
@@ -283,7 +293,8 @@ impl<'a, N: 'a + Hash, O: Commutative<N>> Hash for PrefixPoint<N, O> {
 #[cfg(test)]
 mod tests {
 
-    /// Modifies the given slice such that the n'th element becomes the sum of the first n elements.
+    /// Modifies the given slice such that the n'th element becomes the sum of the first n
+    /// elements.
     pub fn compute_prefix_sum<N: ::std::ops::Add<Output=N> + Copy>(buf: &mut[N]) {
         let mut iter = buf.iter_mut();
         match iter.next() {
@@ -299,15 +310,20 @@ mod tests {
     }
 
     use super::*;
-    use rand::{Rng, thread_rng};
+    use rand::distributions::Standard;
+    use rand::prelude::*;
     use std::num::Wrapping;
-    use ops::Add;
+    use crate::ops::Add;
+
+    fn random_vec(rng: &mut ThreadRng, len: usize) -> Vec<Wrapping<i32>> {
+        rng.sample_iter(&Standard).map(|i| Wrapping(i)).take(len).collect()
+    }
 
     #[test]
     fn fenwick_query() {
         let mut rng = thread_rng();
         for n in 0..130 {
-            let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let mut vec = random_vec(&mut rng, n);
             let fenwick = PrefixPoint::build(vec.clone(), Add);
             compute_prefix_sum(&mut vec);
             for i in 0..vec.len() {
@@ -320,7 +336,7 @@ mod tests {
     fn fenwick_map() {
         let mut rng = thread_rng();
         for n in 0..130 {
-            let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let mut vec = random_vec(&mut rng, n);
             let mut fenwick = PrefixPoint::build(vec.clone(), Add);
             assert_eq!(fenwick.clone().unwrap(), vec);
             assert_eq!(fenwick.clone().unwrap_clone(), vec);
@@ -335,8 +351,8 @@ mod tests {
     fn fenwick_modify() {
         let mut rng = thread_rng();
         for n in 0..130 {
-            let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
-            let diff: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let mut vec = random_vec(&mut rng, n);
+            let diff = random_vec(&mut rng, n);
             let mut fenwick = PrefixPoint::build(vec.clone(), Add);
             for i in 0..diff.len() {
                 let mut ps: Vec<Wrapping<i32>> = vec.clone();
@@ -356,8 +372,8 @@ mod tests {
     fn fenwick_set() {
         let mut rng = thread_rng();
         for n in 0..130 {
-            let mut vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
-            let diff: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let mut vec = random_vec(&mut rng, n);
+            let diff = random_vec(&mut rng, n);
             let mut fenwick = PrefixPoint::build(vec.clone(), Add);
             for i in 0..diff.len() {
                 let mut ps: Vec<Wrapping<i32>> = vec.clone();
@@ -377,7 +393,7 @@ mod tests {
     fn fenwick_extend() {
         let mut rng = thread_rng();
         for n in 0..130 {
-            let vec: Vec<Wrapping<i32>> = rng.gen_iter::<i32>().take(n).map(|i| Wrapping(i)).collect();
+            let vec = random_vec(&mut rng, n);
             let mut sum = vec.clone();
             compute_prefix_sum(&mut sum);
             for i in 0..sum.len() {

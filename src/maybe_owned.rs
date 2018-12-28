@@ -42,7 +42,7 @@ impl<'a, T: 'a + Debug> Debug for MaybeOwned<'a, T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
             MaybeOwned::Borrowed(v)  => write!(f, "Borrw({:?})", v),
-            MaybeOwned::Owned(ref v) => write!(f, "Owned({:?})", v)
+            MaybeOwned::Owned(ref v) => write!(f, "Owned({:?})", v),
         }
     }
 }
@@ -50,8 +50,8 @@ impl<'a, T: 'a + Debug> Debug for MaybeOwned<'a, T> {
 impl<'a, T: 'a + Display> Display for MaybeOwned<'a, T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
-            MaybeOwned::Borrowed(v)  => write!(f, "Borrw({})", v),
-            MaybeOwned::Owned(ref v) => write!(f, "Owned({})", v)
+            MaybeOwned::Borrowed(v)  => v.fmt(f),
+            MaybeOwned::Owned(ref v) => v.fmt(f),
         }
     }
 }
