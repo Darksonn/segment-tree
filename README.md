@@ -1,5 +1,9 @@
 # segment-tree
 
+[![Documentation](https://docs.rs/segment-tree/badge.svg)](https://docs.rs/segment-tree)
+[![Cargo](https://img.shields.io/crates/v/segment-tree.svg)](https://crates.io/crates/segment-tree)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Darksonn/segment-tree/blob/master/LICENSE)
+
 This crate contains various data structures useful for quickly performing
 interval queries or modifications in some array.
 
