@@ -25,6 +25,31 @@
 //! This crate has the optional feature [`num-bigint`], which implements the operations in
 //! [`ops`] for [`BigInt`] and [`BigUint`].
 //!
+//! # Example
+//!
+//! The example below shows a segment tree, which allows queries to any interval in
+//! logaritmic time.
+//!
+//! ```
+//! use segment_tree::SegmentPoint;
+//! use segment_tree::ops::Min;
+//!
+//! let array = vec![4, 3, 2, 1, 2, 3, 4];
+//! let mut tree = SegmentPoint::build(array, Min);
+//!
+//! // Compute the minimum of the whole array.
+//! assert_eq!(tree.query(0, tree.len()), 1);
+//!
+//! // Compute the minimum of part of the array.
+//! assert_eq!(tree.query(0, 3), 2);
+//!
+//! // Change the 1 into a 10.
+//! tree.modify(3, 10);
+//!
+//! // The minimum of the whole array is now 2.
+//! assert_eq!(tree.query(0, tree.len()), 2);
+//! ```
+//!
 //! [1]: https://en.wikipedia.org/wiki/Range_minimum_query
 //! [2]: ops/trait.Commutative.html
 //! [3]: https://en.wikipedia.org/wiki/Fenwick_tree

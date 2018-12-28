@@ -1,8 +1,8 @@
 [package]
 name = "segment-tree"
-version = "2.0.0-git"
+version = "2.0.0"
 authors = ["Alice Ryhl <alice@ryhl.io>"]
-description = "Quickly perform interval queries or modifications in some array.  Works on stable."
+description = "Quickly perform interval queries or modifications."
 repository = "https://github.com/Darksonn/segment-tree"
 readme = "README.md"
 keywords = ["segment", "tree", "rmq", "query", "interval", "fenwick", "sum", "prefix", "array"]
